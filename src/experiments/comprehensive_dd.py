@@ -567,10 +567,211 @@ def exp6_rff_ridge(args):
     return all_results
 
 
+def exp7_spectral_analysis(args):
+    """Spectral analysis: condition number and solution norm vs p/n."""
+    print("\n" + "="*70)
+    print("  EXP 7: SPECTRAL ANALYSIS (WHY DD HAPPENS)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rate = 0.1
+    X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+        args.data_dir, n, noise_rate, args.seed)
+
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.98,
+              1.0, 1.02, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0, 5.0, 8.0]
+    results = []
+
+    for ratio in ratios:
+        D = max(1, int(ratio * n))
+        Phi_tr = random_fourier_features(X_tr, D, sigma=5.0, seed=args.seed)
+        Phi_te = random_fourier_features(X_te, D, sigma=5.0, seed=args.seed)
+
+        # Compute condition number
+        if D >= n:
+            K = Phi_tr @ Phi_tr.T  # n x n
+        else:
+            K = Phi_tr.T @ Phi_tr  # D x D
+        eigvals = np.linalg.eigvalsh(K)
+        eigvals_pos = eigvals[eigvals > 1e-15]
+        if len(eigvals_pos) > 0:
+            cond_num = float(eigvals_pos[-1] / eigvals_pos[0])
+        else:
+            cond_num = float('inf')
+
+        # Compute min-norm solution and its norm
+        w = min_norm_solution(Phi_tr, Y_tr, lam=1e-10)
+        w_norm = float(np.linalg.norm(w))
+
+        # Test MSE
+        pred_te = Phi_te @ w
+        test_mse = float(np.mean((Y_te - pred_te)**2))
+        test_acc = float(np.mean(np.argmax(pred_te, 1) == y_te) * 100)
+
+        # Max eigenvalue / spectral norm
+        max_eig = float(eigvals[-1]) if len(eigvals) > 0 else 0
+        min_eig = float(eigvals_pos[0]) if len(eigvals_pos) > 0 else 0
+
+        print(f"  D={D:5d} (p/n={ratio:.2f}): cond={cond_num:.1e}, "
+              f"||w||={w_norm:.2f}, test_mse={test_mse:.4f}")
+        results.append({
+            "D": D, "p_over_n": ratio,
+            "condition_number": cond_num, "w_norm": w_norm,
+            "max_eigenvalue": max_eig, "min_eigenvalue": min_eig,
+            "test_mse": test_mse, "test_acc": test_acc,
+        })
+
+    out = os.path.join(args.output_dir, "exp7_spectral_analysis")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(results, f, indent=2)
+
+    # Plot: 3 subplots
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    r = sorted(results, key=lambda x: x["p_over_n"])
+    x = [d["p_over_n"] for d in r]
+
+    # Condition number
+    axes[0].plot(x, [d["condition_number"] for d in r], "o-",
+                 color="tab:red", markersize=5)
+    axes[0].set_yscale("log")
+    axes[0].set_ylabel("Condition Number")
+    axes[0].set_title("Kernel Matrix Condition Number")
+
+    # Solution norm
+    axes[1].plot(x, [d["w_norm"] for d in r], "s-",
+                 color="tab:purple", markersize=5)
+    axes[1].set_yscale("log")
+    axes[1].set_ylabel("||w||₂")
+    axes[1].set_title("Min-Norm Solution Norm")
+
+    # Test MSE for reference
+    axes[2].plot(x, [d["test_mse"] for d in r], "D-",
+                 color="tab:blue", markersize=5)
+    axes[2].set_yscale("log")
+    axes[2].set_ylabel("Test MSE")
+    axes[2].set_title("Test MSE (for comparison)")
+
+    for ax in axes:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7, label="p/n=1")
+        ax.set_xlabel("p/n")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+
+    plt.suptitle(f"Why DD Happens: Spectral Analysis (RFF, MNIST, n={n}, 10% noise)",
+                 fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return results
+
+
+def exp8_optimal_lambda(args):
+    """Find optimal ridge lambda for each p/n ratio."""
+    print("\n" + "="*70)
+    print("  EXP 8: OPTIMAL RIDGE LAMBDA (RFF)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rate = 0.1
+    X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+        args.data_dir, n, noise_rate, args.seed)
+
+    lambdas = np.logspace(-10, 2, 40).tolist()
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.98,
+              1.0, 1.02, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0, 5.0, 8.0]
+
+    all_results = {}
+
+    for ratio in ratios:
+        D = max(1, int(ratio * n))
+        Phi_tr = random_fourier_features(X_tr, D, sigma=5.0, seed=args.seed)
+        Phi_te = random_fourier_features(X_te, D, sigma=5.0, seed=args.seed)
+
+        best_lam = 0
+        best_mse = float('inf')
+        sweep = []
+
+        for lam in lambdas:
+            w = min_norm_solution(Phi_tr, Y_tr, lam=lam)
+            pred_te = Phi_te @ w
+            test_mse = float(np.mean((Y_te - pred_te)**2))
+            sweep.append({"lambda": lam, "test_mse": test_mse})
+            if test_mse < best_mse:
+                best_mse = test_mse
+                best_lam = lam
+
+        print(f"  D={D:5d} (p/n={ratio:.2f}): best_λ={best_lam:.2e}, "
+              f"best_mse={best_mse:.4f}")
+        all_results[str(ratio)] = {
+            "D": D, "p_over_n": ratio,
+            "best_lambda": best_lam, "best_test_mse": best_mse,
+            "sweep": sweep,
+        }
+
+    out = os.path.join(args.output_dir, "exp8_optimal_lambda")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    # Plot
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    r = sorted(all_results.values(), key=lambda x: x["p_over_n"])
+    x = [d["p_over_n"] for d in r]
+
+    # Optimal lambda vs p/n
+    axes[0].plot(x, [d["best_lambda"] for d in r], "o-",
+                 color="tab:orange", markersize=6)
+    axes[0].set_yscale("log")
+    axes[0].set_ylabel("Optimal \u03bb*")
+    axes[0].set_title("Optimal Regularization Strength")
+
+    # Best achievable test MSE vs p/n
+    axes[1].plot(x, [d["best_test_mse"] for d in r], "s-",
+                 color="tab:green", markersize=6)
+    axes[1].set_ylabel("Best Test MSE")
+    axes[1].set_title("Best Achievable Test MSE (with optimal \u03bb)")
+
+    # Heatmap-style: for a few key p/n ratios, show MSE vs lambda
+    key_ratios = ["0.5", "0.95", "1.0", "1.05", "2.0"]
+    colors_heat = plt.cm.coolwarm(np.linspace(0, 1, len(key_ratios)))
+    for idx, kr in enumerate(key_ratios):
+        if kr in all_results:
+            sweep = all_results[kr]["sweep"]
+            lams = [s["lambda"] for s in sweep]
+            mses = [s["test_mse"] for s in sweep]
+            axes[2].plot(lams, mses, "o-", color=colors_heat[idx],
+                         label=f"p/n={kr}", markersize=3)
+    axes[2].set_xscale("log")
+    axes[2].set_yscale("log")
+    axes[2].set_xlabel("\u03bb")
+    axes[2].set_ylabel("Test MSE")
+    axes[2].set_title("Test MSE vs \u03bb (selected p/n)")
+    axes[2].legend(fontsize=9)
+
+    for ax in axes[:2]:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7, label="p/n=1")
+        ax.set_xlabel("p/n")
+        ax.legend()
+    for ax in axes:
+        ax.grid(True, alpha=0.3)
+
+    plt.suptitle(f"Optimal Ridge \u03bb* Analysis (RFF, MNIST, n={n}, 10% noise)",
+                 fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return all_results
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--experiments", type=str, default="1,2,3,4,5,6",
-                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch, 5=arch_comp, 6=rff_ridge)")
+    parser.add_argument("--experiments", type=str, default="1,2,3,4,5,6,7,8",
+                        help="Which experiments to run (1=model_rff, 2=sample_rff, "
+                             "3=nn_model, 4=nn_epoch, 5=arch_comp, 6=rff_ridge, "
+                             "7=spectral, 8=optimal_lambda)")
     parser.add_argument("--n-train", type=int, default=1000,
                         help="Training samples for random features experiments")
     parser.add_argument("--n-train-nn", type=int, default=4000,
@@ -598,6 +799,10 @@ def main():
         exp5_architecture_comparison(args)
     if 6 in exps:
         exp6_rff_ridge(args)
+    if 7 in exps:
+        exp7_spectral_analysis(args)
+    if 8 in exps:
+        exp8_optimal_lambda(args)
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")
@@ -607,3 +812,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
