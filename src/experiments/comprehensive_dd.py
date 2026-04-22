@@ -389,7 +389,7 @@ def exp5_architecture_comparison(args):
 
     n = args.n_train_nn
     train_full, test_set = get_cifar10(data_dir=args.data_dir, augment=False)
-    train_full = corrupt_labels(train_full, 0.2, seed=args.seed)
+    train_full = corrupt_labels(train_full, 0.1, seed=args.seed)
     train_set = make_subset(train_full, n, seed=args.seed)
     train_loader, test_loader = make_loaders(train_set, test_set, batch_size=256)
 
@@ -476,7 +476,7 @@ def exp5_architecture_comparison(args):
     axes[1].set_ylabel("Test Loss")
     axes[1].set_title("Architecture Comparison: Test Loss")
 
-    plt.suptitle(f"MLP vs CNN vs ResNet on CIFAR-10 (n={n}, 20% noise)", fontsize=14, y=1.02)
+    plt.suptitle(f"MLP vs CNN vs ResNet on CIFAR-10 (n={n}, 10% noise)", fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
     plt.close()
@@ -485,10 +485,92 @@ def exp5_architecture_comparison(args):
     return all_results
 
 
+def exp6_rff_ridge(args):
+    """Effect of ridge regularization (lambda) on the DD peak."""
+    print("\n" + "="*70)
+    print("  EXP 6: RIDGE REGULARIZATION vs DD PEAK (RFF)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rate = 0.1
+    X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+        args.data_dir, n, noise_rate, args.seed)
+
+    lambdas = [0, 1e-8, 1e-6, 1e-4, 1e-2, 0.1, 1.0]
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.98,
+              1.0, 1.02, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0, 5.0, 8.0]
+
+    all_results = {}
+
+    for lam in lambdas:
+        print(f"\n--- lambda = {lam} ---")
+        results = []
+        for ratio in ratios:
+            D = max(1, int(ratio * n))
+            Phi_tr = random_fourier_features(X_tr, D, sigma=5.0, seed=args.seed)
+            Phi_te = random_fourier_features(X_te, D, sigma=5.0, seed=args.seed)
+            w = min_norm_solution(Phi_tr, Y_tr, lam=lam)
+
+            pred_tr = Phi_tr @ w
+            pred_te = Phi_te @ w
+            train_mse = np.mean((Y_tr - pred_tr)**2)
+            test_mse = np.mean((Y_te - pred_te)**2)
+            train_acc = np.mean(np.argmax(pred_tr, 1) == y_tr) * 100
+            test_acc = np.mean(np.argmax(pred_te, 1) == y_te) * 100
+
+            print(f"  D={D:5d} (p/n={ratio:.2f}): "
+                  f"test_mse={test_mse:.4f}, test_acc={test_acc:.1f}%")
+            results.append({
+                "D": D, "p_over_n": ratio, "lambda": lam,
+                "train_mse": float(train_mse), "test_mse": float(test_mse),
+                "train_acc": float(train_acc), "test_acc": float(test_acc),
+            })
+
+        all_results[str(lam)] = results
+
+    out = os.path.join(args.output_dir, "exp6_rff_ridge")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    # Plot
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    cmap = plt.cm.viridis
+    n_colors = len(lambdas)
+    colors = [cmap(i / max(1, n_colors - 1)) for i in range(n_colors)]
+
+    for idx, lam in enumerate(lambdas):
+        lam_str = str(lam)
+        r = sorted(all_results[lam_str], key=lambda x: x["p_over_n"])
+        x = [d["p_over_n"] for d in r]
+        label = f"\u03bb={lam}" if lam > 0 else "\u03bb=0 (ridgeless)"
+        axes[0].plot(x, [d["test_mse"] for d in r], "o-", color=colors[idx],
+                     label=label, markersize=4)
+        axes[1].plot(x, [100 - d["test_acc"] for d in r], "o-", color=colors[idx],
+                     label=label, markersize=4)
+
+    for ax in axes:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7)
+        ax.set_xlabel("p/n")
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
+    axes[0].set_ylabel("Test MSE"); axes[0].set_yscale("log")
+    axes[0].set_title("Ridge Regularization: Test MSE")
+    axes[1].set_ylabel("Test Error (%)")
+    axes[1].set_title("Ridge Regularization: Classification Error")
+    plt.suptitle(f"Effect of Ridge \u03bb on DD Peak (RFF, MNIST, n={n}, 10% noise)",
+                 fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return all_results
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--experiments", type=str, default="1,2,3,4,5",
-                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch, 5=arch_comp)")
+    parser.add_argument("--experiments", type=str, default="1,2,3,4,5,6",
+                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch, 5=arch_comp, 6=rff_ridge)")
     parser.add_argument("--n-train", type=int, default=1000,
                         help="Training samples for random features experiments")
     parser.add_argument("--n-train-nn", type=int, default=4000,
@@ -514,6 +596,8 @@ def main():
         exp4_epoch_wise_nn(args)
     if 5 in exps:
         exp5_architecture_comparison(args)
+    if 6 in exps:
+        exp6_rff_ridge(args)
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")
