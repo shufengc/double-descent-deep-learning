@@ -766,12 +766,95 @@ def exp8_optimal_lambda(args):
     return all_results
 
 
+
+def exp9_sigma_sensitivity(args):
+    """Effect of RFF kernel bandwidth sigma on double descent."""
+    print("\n" + "="*70)
+    print("  EXP 9: KERNEL BANDWIDTH SIGMA SENSITIVITY (RFF)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rate = 0.1
+    X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+        args.data_dir, n, noise_rate, args.seed)
+
+    sigmas = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0]
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.98,
+              1.0, 1.02, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0, 5.0, 8.0]
+
+    all_results = {}
+
+    for sigma in sigmas:
+        print(f"\n--- sigma = {sigma} ---")
+        results = []
+        for ratio in ratios:
+            D = max(1, int(ratio * n))
+            Phi_tr = random_fourier_features(X_tr, D, sigma=sigma, seed=args.seed)
+            Phi_te = random_fourier_features(X_te, D, sigma=sigma, seed=args.seed)
+            w = min_norm_solution(Phi_tr, Y_tr)
+
+            pred_tr = Phi_tr @ w
+            pred_te = Phi_te @ w
+            train_mse = np.mean((Y_tr - pred_tr)**2)
+            test_mse = np.mean((Y_te - pred_te)**2)
+            train_acc = np.mean(np.argmax(pred_tr, 1) == y_tr) * 100
+            test_acc = np.mean(np.argmax(pred_te, 1) == y_te) * 100
+
+            print(f"  D={D:5d} (p/n={ratio:.2f}): "
+                  f"test_mse={test_mse:.4f}, test_acc={test_acc:.1f}%")
+            results.append({
+                "D": D, "p_over_n": ratio, "sigma": sigma,
+                "train_mse": float(train_mse), "test_mse": float(test_mse),
+                "train_acc": float(train_acc), "test_acc": float(test_acc),
+            })
+
+        all_results[str(sigma)] = results
+
+    out = os.path.join(args.output_dir, "exp9_sigma_sensitivity")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    # Plot
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    cmap = plt.cm.plasma
+    n_colors = len(sigmas)
+    colors = [cmap(i / max(1, n_colors - 1)) for i in range(n_colors)]
+
+    for idx, sigma in enumerate(sigmas):
+        s_str = str(sigma)
+        r = sorted(all_results[s_str], key=lambda x: x["p_over_n"])
+        x = [d["p_over_n"] for d in r]
+        label = f"\u03c3={sigma}"
+        axes[0].plot(x, [d["test_mse"] for d in r], "o-", color=colors[idx],
+                     label=label, markersize=4)
+        axes[1].plot(x, [100 - d["test_acc"] for d in r], "o-", color=colors[idx],
+                     label=label, markersize=4)
+
+    for ax in axes:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7)
+        ax.set_xlabel("p/n")
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
+    axes[0].set_ylabel("Test MSE"); axes[0].set_yscale("log")
+    axes[0].set_title("Kernel Bandwidth: Test MSE")
+    axes[1].set_ylabel("Test Error (%)")
+    axes[1].set_title("Kernel Bandwidth: Classification Error")
+    plt.suptitle(f"Effect of RFF Kernel Bandwidth \u03c3 on DD (MNIST, n={n}, 10% noise)",
+                 fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return all_results
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--experiments", type=str, default="1,2,3,4,5,6,7,8",
+    parser.add_argument("--experiments", type=str, default="1,2,3,4,5,6,7,8,9",
                         help="Which experiments to run (1=model_rff, 2=sample_rff, "
                              "3=nn_model, 4=nn_epoch, 5=arch_comp, 6=rff_ridge, "
-                             "7=spectral, 8=optimal_lambda)")
+                             "7=spectral, 8=optimal_lambda, 9=sigma)")
     parser.add_argument("--n-train", type=int, default=1000,
                         help="Training samples for random features experiments")
     parser.add_argument("--n-train-nn", type=int, default=4000,
@@ -803,6 +886,8 @@ def main():
         exp7_spectral_analysis(args)
     if 8 in exps:
         exp8_optimal_lambda(args)
+    if 9 in exps:
+        exp9_sigma_sensitivity(args)
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")
