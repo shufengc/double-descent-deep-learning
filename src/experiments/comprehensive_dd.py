@@ -9,6 +9,9 @@ Experiments:
   3. Effect of noise on DD peak (random features)
   4. Sample-wise DD (random features): fix p, sweep n
   5. Epoch-wise DD (neural network): train CNN for many epochs
+  6. Regularization-wise DD (random features): compare ridge lambdas
+  7. Noise-rate DD comparison (random features): 0%, 10%, 20%, 40%
+  8. Optimizer DD comparison (neural network): Adam vs SGD
 """
 
 import sys
@@ -377,10 +380,315 @@ def exp4_epoch_wise_nn(args):
     return all_histories
 
 
+def exp5_rff_lambda_comparison(args):
+    """Regularization-wise DD: compare RFF model-wise curves across lambdas."""
+    print("\n" + "="*70)
+    print("  EXP 5: REGULARIZATION-WISE DD (Random Features)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rate = args.lambda_noise_rate
+    lambdas = [float(x.strip()) for x in args.lambdas.split(",") if x.strip()]
+    all_results = {}
+
+    X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+        args.data_dir, n, noise_rate, args.seed
+    )
+
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.98,
+              1.0, 1.02, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0, 5.0, 8.0]
+
+    for lam in lambdas:
+        print(f"\n--- lambda = {lam:.1e} ---")
+        results = []
+
+        for ratio in ratios:
+            D = max(1, int(ratio * n))
+            Phi_tr = random_fourier_features(X_tr, D, sigma=5.0, seed=args.seed)
+            Phi_te = random_fourier_features(X_te, D, sigma=5.0, seed=args.seed)
+            w = min_norm_solution(Phi_tr, Y_tr, lam=lam)
+
+            pred_tr = Phi_tr @ w
+            pred_te = Phi_te @ w
+            train_mse = np.mean((Y_tr - pred_tr)**2)
+            test_mse = np.mean((Y_te - pred_te)**2)
+            train_acc = np.mean(np.argmax(pred_tr, 1) == y_tr) * 100
+            test_acc = np.mean(np.argmax(pred_te, 1) == y_te) * 100
+
+            print(
+                f"  D={D:5d} (p/n={ratio:.2f}): "
+                f"test_mse={test_mse:.4f}, test_acc={test_acc:.1f}%"
+            )
+            results.append(
+                {
+                    "lambda": lam,
+                    "D": D,
+                    "p_over_n": ratio,
+                    "train_mse": float(train_mse),
+                    "test_mse": float(test_mse),
+                    "train_acc": float(train_acc),
+                    "test_acc": float(test_acc),
+                }
+            )
+
+        all_results[str(lam)] = results
+
+    out = os.path.join(args.output_dir, "exp5_rff_lambda_comparison")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    cmap = plt.cm.plasma
+    colors = [cmap(i / max(len(lambdas) - 1, 1)) for i in range(len(lambdas))]
+    for lam, color in zip(lambdas, colors):
+        r = sorted(all_results[str(lam)], key=lambda x: x["p_over_n"])
+        x = [d["p_over_n"] for d in r]
+        axes[0].plot(
+            x,
+            [d["test_mse"] for d in r],
+            "o-",
+            color=color,
+            markersize=4,
+            label=f"lambda={lam:.0e}",
+        )
+        axes[1].plot(
+            x,
+            [100 - d["test_acc"] for d in r],
+            "o-",
+            color=color,
+            markersize=4,
+            label=f"lambda={lam:.0e}",
+        )
+
+    for ax in axes:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7)
+        ax.set_xlabel("p/n")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+    axes[0].set_ylabel("Test MSE")
+    axes[0].set_yscale("log")
+    axes[0].set_title("Regularization Comparison: Test MSE")
+    axes[1].set_ylabel("Test Error (%)")
+    axes[1].set_title("Regularization Comparison: Classification Error")
+    plt.suptitle(
+        f"RFF on MNIST (n={n}, noise={noise_rate:.0%})",
+        fontsize=14,
+        y=1.02,
+    )
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return all_results
+
+
+def exp6_rff_noise_rate_comparison(args):
+    """Noise-rate comparison for RFF model-wise double descent."""
+    print("\n" + "="*70)
+    print("  EXP 6: NOISE-RATE DD COMPARISON (Random Features)")
+    print("="*70)
+
+    n = args.n_train
+    noise_rates = [float(x.strip()) for x in args.noise_rates.split(",") if x.strip()]
+    ratios = [0.2, 0.5, 0.8, 0.9, 0.95, 0.98, 1.0, 1.02, 1.05, 1.1, 1.5, 2.0, 3.0, 5.0, 8.0]
+    all_results = {}
+    peak_summary = []
+
+    for nr in noise_rates:
+        print(f"\n--- noise = {nr:.0%} ---")
+        X_tr, Y_tr, y_tr, X_te, Y_te, y_te = load_mnist_numpy(
+            args.data_dir, n, noise_rate=nr, seed=args.seed
+        )
+
+        results = []
+        for ratio in ratios:
+            D = max(1, int(ratio * n))
+            Phi_tr = random_fourier_features(X_tr, D, sigma=5.0, seed=args.seed)
+            Phi_te = random_fourier_features(X_te, D, sigma=5.0, seed=args.seed)
+            w = min_norm_solution(Phi_tr, Y_tr)
+
+            pred_tr = Phi_tr @ w
+            pred_te = Phi_te @ w
+            train_mse = np.mean((Y_tr - pred_tr) ** 2)
+            test_mse = np.mean((Y_te - pred_te) ** 2)
+            train_acc = np.mean(np.argmax(pred_tr, 1) == y_tr) * 100
+            test_acc = np.mean(np.argmax(pred_te, 1) == y_te) * 100
+            print(
+                f"  D={D:5d} (p/n={ratio:.2f}): "
+                f"test_mse={test_mse:.4f}, test_acc={test_acc:.1f}%"
+            )
+            results.append(
+                {
+                    "noise_rate": nr,
+                    "D": D,
+                    "p_over_n": ratio,
+                    "train_mse": float(train_mse),
+                    "test_mse": float(test_mse),
+                    "train_acc": float(train_acc),
+                    "test_acc": float(test_acc),
+                }
+            )
+
+        sorted_results = sorted(results, key=lambda x: x["test_mse"], reverse=True)
+        peak = sorted_results[0]
+        peak_summary.append(
+            {
+                "noise_rate": nr,
+                "peak_test_mse": peak["test_mse"],
+                "peak_p_over_n": peak["p_over_n"],
+                "peak_test_acc": peak["test_acc"],
+            }
+        )
+        all_results[str(nr)] = results
+
+    out = os.path.join(args.output_dir, "exp6_rff_noise_comparison")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+    with open(os.path.join(out, "peak_summary.json"), "w") as f:
+        json.dump(peak_summary, f, indent=2)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    cmap = plt.cm.viridis
+    colors = [cmap(i / max(len(noise_rates) - 1, 1)) for i in range(len(noise_rates))]
+    for nr, color in zip(noise_rates, colors):
+        r = sorted(all_results[str(nr)], key=lambda x: x["p_over_n"])
+        x = [d["p_over_n"] for d in r]
+        axes[0].plot(x, [d["test_mse"] for d in r], "o-", color=color, markersize=4, label=f"noise={nr:.0%}")
+        axes[1].plot(x, [100 - d["test_acc"] for d in r], "o-", color=color, markersize=4, label=f"noise={nr:.0%}")
+
+    for ax in axes:
+        ax.axvline(x=1.0, color="gray", linestyle=":", alpha=0.7)
+        ax.set_xlabel("p/n")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+    axes[0].set_ylabel("Test MSE")
+    axes[0].set_yscale("log")
+    axes[0].set_title("Noise Comparison: Test MSE")
+    axes[1].set_ylabel("Test Error (%)")
+    axes[1].set_title("Noise Comparison: Classification Error")
+    plt.suptitle(f"RFF on MNIST (n={n}, ridgeless)", fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return {"results": all_results, "peak_summary": peak_summary}
+
+
+def exp7_nn_optimizer_comparison(args):
+    """Optimizer comparison for NN model-wise double descent."""
+    print("\n" + "="*70)
+    print("  EXP 7: OPTIMIZER DD COMPARISON (Neural Network)")
+    print("="*70)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else
+                          "mps" if torch.backends.mps.is_available() else "cpu")
+    print(f"Device: {device}")
+    n = args.n_train_nn
+    noise_rate = args.optimizer_noise_rate
+    widths = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32]
+    optimizers = [x.strip().lower() for x in args.optimizers.split(",") if x.strip()]
+    all_results = {}
+
+    train_full, test_set = get_cifar10(data_dir=args.data_dir, augment=False)
+    if noise_rate > 0:
+        train_full = corrupt_labels(train_full, noise_rate, seed=args.seed)
+    train_set = make_subset(train_full, n, seed=args.seed)
+    train_loader, test_loader = make_loaders(train_set, test_set, batch_size=256)
+
+    for opt_name in optimizers:
+        if opt_name == "adam":
+            lr = args.optimizer_lr_adam
+        elif opt_name == "sgd":
+            lr = args.optimizer_lr_sgd
+        else:
+            lr = args.optimizer_lr_adam
+        wd = args.optimizer_weight_decay
+        print(f"\n--- optimizer = {opt_name} (lr={lr}, weight_decay={wd}) ---")
+        results = []
+        for width in widths:
+            print(f"  -> training width={width} ({opt_name})")
+            torch.manual_seed(args.seed)
+            np.random.seed(args.seed)
+            model = CNN(num_classes=10, num_filters=width, input_channels=3)
+            p = model.count_parameters()
+            ratio = p / n
+
+            trainer = Trainer(
+                model,
+                device=device,
+                lr=lr,
+                momentum=args.optimizer_momentum,
+                weight_decay=wd,
+                optimizer_type=opt_name,
+            )
+            t0 = time.time()
+            history = trainer.train(
+                train_loader,
+                test_loader,
+                epochs=args.epochs_optimizer,
+                log_interval=max(1, args.optimizer_log_interval),
+                verbose=True,
+            )
+            elapsed = time.time() - t0
+            r = {
+                "optimizer": opt_name,
+                "lr": lr,
+                "weight_decay": wd,
+                "width": width,
+                "num_params": p,
+                "p_over_n": round(ratio, 4),
+                "train_acc": history["train_acc"][-1],
+                "test_acc": history["test_acc"][-1],
+                "train_loss": history["train_loss"][-1],
+                "test_loss": history["test_loss"][-1],
+            }
+            results.append(r)
+            print(
+                f"  opt={opt_name:>4s} w={width:3d} p={p:>8,} p/n={ratio:.3f} "
+                f"train_err={100-r['train_acc']:.1f}% "
+                f"test_err={100-r['test_acc']:.1f}% ({elapsed:.0f}s)"
+            )
+        all_results[opt_name] = results
+
+    out = os.path.join(args.output_dir, "exp7_nn_optimizer_comparison")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    color_map = {"adam": "tab:blue", "sgd": "tab:orange"}
+    for opt_name, results in all_results.items():
+        r = sorted(results, key=lambda x: x["num_params"])
+        params = [d["num_params"] for d in r]
+        color = color_map.get(opt_name, None)
+        axes[0].plot(params, [100 - d["test_acc"] for d in r], "o-", color=color, label=f"Test ({opt_name})", markersize=5)
+        axes[0].plot(params, [100 - d["train_acc"] for d in r], "s--", color=color, alpha=0.4, label=f"Train ({opt_name})", markersize=4)
+        axes[1].plot(params, [d["test_loss"] for d in r], "o-", color=color, label=f"Test ({opt_name})", markersize=5)
+
+    for ax in axes:
+        ax.axvline(x=n, color="gray", linestyle=":", alpha=0.7, label=f"p=n={n}")
+        ax.set_xscale("log")
+        ax.set_xlabel("Number of Parameters")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+    axes[0].set_ylabel("Error (%)")
+    axes[0].set_title("Optimizer Comparison: Error")
+    axes[1].set_ylabel("Test Loss")
+    axes[1].set_title("Optimizer Comparison: Loss")
+    plt.suptitle(f"CNN on CIFAR-10 (n={n}, noise={noise_rate:.0%})", fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Saved to {out}")
+    return all_results
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiments", type=str, default="1,2,3,4",
-                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch)")
+                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch, 5=rff_lambda, 6=rff_noise, 7=nn_optimizer)")
     parser.add_argument("--n-train", type=int, default=1000,
                         help="Training samples for random features experiments")
     parser.add_argument("--n-train-nn", type=int, default=4000,
@@ -389,6 +697,28 @@ def main():
                         help="Epochs for NN model-wise experiment")
     parser.add_argument("--epochs-epoch", type=int, default=1000,
                         help="Epochs for epoch-wise experiment")
+    parser.add_argument("--lambdas", type=str, default="0,1e-10,1e-8,1e-6,1e-4,1e-2",
+                        help="Comma-separated ridge lambdas for exp 5")
+    parser.add_argument("--lambda-noise-rate", type=float, default=0.1,
+                        help="Label noise rate used in exp 5")
+    parser.add_argument("--noise-rates", type=str, default="0.0,0.1,0.2,0.4",
+                        help="Comma-separated noise rates for exp 6")
+    parser.add_argument("--optimizers", type=str, default="adam,sgd",
+                        help="Comma-separated optimizer names for exp 7")
+    parser.add_argument("--epochs-optimizer", type=int, default=350,
+                        help="Epochs for optimizer comparison (exp 7)")
+    parser.add_argument("--optimizer-log-interval", type=int, default=20,
+                        help="Epoch logging interval for exp 7")
+    parser.add_argument("--optimizer-lr-adam", type=float, default=0.001,
+                        help="Adam learning rate for exp 7")
+    parser.add_argument("--optimizer-lr-sgd", type=float, default=0.05,
+                        help="SGD learning rate for exp 7 (typically >> Adam on CIFAR)")
+    parser.add_argument("--optimizer-weight-decay", type=float, default=1e-4,
+                        help="L2 weight decay for exp 7 (both optimizers)")
+    parser.add_argument("--optimizer-momentum", type=float, default=0.9,
+                        help="Momentum used for SGD in exp 7")
+    parser.add_argument("--optimizer-noise-rate", type=float, default=0.1,
+                        help="Label noise rate used in exp 7")
     parser.add_argument("--data-dir", type=str, default="./data")
     parser.add_argument("--output-dir", type=str, default="./results")
     parser.add_argument("--seed", type=int, default=42)
@@ -404,6 +734,12 @@ def main():
         exp3_nn_model_wise(args)
     if 4 in exps:
         exp4_epoch_wise_nn(args)
+    if 5 in exps:
+        exp5_rff_lambda_comparison(args)
+    if 6 in exps:
+        exp6_rff_noise_rate_comparison(args)
+    if 7 in exps:
+        exp7_nn_optimizer_comparison(args)
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")

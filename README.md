@@ -8,11 +8,14 @@
 
 ## Overview
 
-This project empirically investigates the **double descent** phenomenon — a surprising behavior where test error first decreases, then increases (classical bias-variance tradeoff), then decreases *again* as model complexity grows beyond the interpolation threshold. We study three manifestations:
+This project empirically investigates the **double descent** phenomenon — a surprising behavior where test error first decreases, then increases (classical bias-variance tradeoff), then decreases *again* as model complexity grows beyond the interpolation threshold. We study six manifestations:
 
 1. **Model-wise double descent**: varying the number of parameters $p$ (Experiments 1 & 3)
 2. **Sample-wise double descent**: varying the number of training samples $n$ (Experiment 2)
 3. **Epoch-wise double descent**: varying training duration $T$ (Experiment 4)
+4. **Regularization-wise comparison**: varying ridge regularization $\lambda$ in RFF (Experiment 5)
+5. **Noise-rate comparison**: varying label noise rates (0%, 10%, 20%, 40%) in RFF (Experiment 6)
+6. **Optimizer comparison**: Adam vs SGD in CNN model-wise DD (Experiment 7)
 
 We use two complementary approaches:
 - **Random Fourier Features (RFF)** on MNIST — kernel method providing clean, theoretically grounded results
@@ -45,8 +48,18 @@ pip install torch torchvision numpy matplotlib tqdm scikit-learn pandas
 # Run RFF experiments only (~15 seconds)
 PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "1,2"
 
+# Run regularization comparison (RFF lambda sweep)
+PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "5"
+
+# Run noise-rate comparison (RFF)
+PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "6"
+
+# Run optimizer comparison (CNN, Adam vs SGD; Adam lr=1e-3, SGD lr=5e-2, wd=1e-4, 10% noise by default)
+PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "7"
+# Tune exp 7: e.g. `--optimizer-lr-sgd 0.1 --optimizer-noise-rate 0.2 --epochs-optimizer 400`
+
 # Run full experiment suite including neural networks (~3-4 hours)
-PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
+PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "1,2,3,4,5,6,7"
 ```
 
 ## Key Results

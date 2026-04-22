@@ -1,0 +1,26 @@
+[
+  {
+    "noise_rate": 0.0,
+    "peak_test_mse": 151.9958790102898,
+    "peak_p_over_n": 1.0,
+    "peak_test_acc": 11.08
+  },
+  {
+    "noise_rate": 0.1,
+    "peak_test_mse": 286.16726356414176,
+    "peak_p_over_n": 1.0,
+    "peak_test_acc": 9.48
+  },
+  {
+    "noise_rate": 0.2,
+    "peak_test_mse": 326.5915746356974,
+    "peak_p_over_n": 1.0,
+    "peak_test_acc": 9.77
+  },
+  {
+    "noise_rate": 0.4,
+    "peak_test_mse": 300.10772714216125,
+    "peak_p_over_n": 1.0,
+    "peak_test_acc": 9.15
+  }
+]
