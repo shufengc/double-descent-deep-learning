@@ -26,7 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from src.models import CNN
+from src.models import CNN, MLP, ResNet
 from src.data import get_cifar10, get_mnist, corrupt_labels, make_subset, make_loaders
 from src.trainer import Trainer
 
@@ -377,10 +377,118 @@ def exp4_epoch_wise_nn(args):
     return all_histories
 
 
+def exp5_architecture_comparison(args):
+    """Architecture comparison (MLP, CNN, ResNet) Double Descent."""
+    print("\n" + "="*70)
+    print("  EXP 5: ARCHITECTURE COMPARISON DD (MLP, CNN, ResNet)")
+    print("="*70)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else
+                          "mps" if torch.backends.mps.is_available() else "cpu")
+    print(f"Device: {device}")
+
+    n = args.n_train_nn
+    train_full, test_set = get_cifar10(data_dir=args.data_dir, augment=False)
+    train_full = corrupt_labels(train_full, 0.2, seed=args.seed)
+    train_set = make_subset(train_full, n, seed=args.seed)
+    train_loader, test_loader = make_loaders(train_set, test_set, batch_size=256)
+
+    # Define the sweep configurations
+    # We want parameter counts roughly from ~1000 to ~250,000 to cross n=4000
+    configs = {
+        "MLP": [1, 2, 5, 10, 20, 50, 100, 200],  # approx 3000 to 600K params
+        "CNN": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32], # approx 700 to 110K params
+        "ResNet": [0.125, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0] # approx 3K to 700K params
+    }
+
+    all_results = {}
+
+    for arch, widths in configs.items():
+        print(f"\n--- Architecture: {arch} ---")
+        results = []
+        for width in widths:
+            torch.manual_seed(args.seed)
+            np.random.seed(args.seed)
+            
+            if arch == "MLP":
+                model = MLP(input_dim=3072, num_classes=10, hidden_width=width, num_hidden_layers=1)
+            elif arch == "CNN":
+                model = CNN(num_classes=10, num_filters=width, input_channels=3)
+            elif arch == "ResNet":
+                model = ResNet(num_classes=10, k=width)
+                
+            p = model.count_parameters()
+            ratio = p / n
+
+            trainer = Trainer(model, device=device, lr=0.001, weight_decay=0.0,
+                              optimizer_type="adam")
+            t0 = time.time()
+            history = trainer.train(train_loader, test_loader,
+                                    epochs=args.epochs_nn,
+                                    log_interval=50,
+                                    verbose=True)
+            elapsed = time.time() - t0
+
+            r = {
+                "width": width, "num_params": p, "p_over_n": round(ratio, 4),
+                "train_acc": history["train_acc"][-1],
+                "test_acc": history["test_acc"][-1],
+                "train_loss": history["train_loss"][-1],
+                "test_loss": history["test_loss"][-1],
+            }
+            results.append(r)
+            print(f"  w={width:<5} p={p:>8,} p/n={ratio:.3f} "
+                  f"train_err={100-r['train_acc']:5.1f}% "
+                  f"test_err={100-r['test_acc']:5.1f}% ({elapsed:.0f}s)")
+            
+        all_results[arch] = results
+
+    out = os.path.join(args.output_dir, "exp5_architecture_comparison")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "results.json"), "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    # Plotting
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    colors = {"MLP": "tab:green", "CNN": "tab:blue", "ResNet": "tab:purple"}
+    
+    for arch, results in all_results.items():
+        r = sorted(results, key=lambda x: x["num_params"])
+        params = [d["num_params"] for d in r]
+        
+        axes[0].plot(params, [100-d["test_acc"] for d in r], "o-", color=colors[arch],
+                     label=f"{arch} (Test)", markersize=5)
+        axes[0].plot(params, [100-d["train_acc"] for d in r], "s--", color=colors[arch],
+                     alpha=0.4, label=f"{arch} (Train)", markersize=4)
+        
+        axes[1].plot(params, [d["test_loss"] for d in r], "o-", color=colors[arch],
+                     label=f"{arch} (Test)", markersize=5)
+
+    for ax in axes:
+        ax.axvline(x=n, color="gray", linestyle=":", alpha=0.7, label=f"p=n={n}")
+        ax.set_xscale("log")
+        ax.set_xlabel("Number of Parameters")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+    axes[0].set_ylabel("Error (%)")
+    axes[0].set_title("Architecture Comparison: Classification Error")
+    axes[1].set_ylabel("Test Loss")
+    axes[1].set_title("Architecture Comparison: Test Loss")
+
+    plt.suptitle(f"MLP vs CNN vs ResNet on CIFAR-10 (n={n}, 20% noise)", fontsize=14, y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out, "dd_curves.png"), bbox_inches="tight", dpi=150)
+    plt.close()
+    
+    print(f"Saved to {out}")
+    return all_results
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--experiments", type=str, default="1,2,3,4",
-                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch)")
+    parser.add_argument("--experiments", type=str, default="1,2,3,4,5",
+                        help="Which experiments to run (1=model_rff, 2=sample_rff, 3=nn_model, 4=nn_epoch, 5=arch_comp)")
     parser.add_argument("--n-train", type=int, default=1000,
                         help="Training samples for random features experiments")
     parser.add_argument("--n-train-nn", type=int, default=4000,
@@ -404,6 +512,8 @@ def main():
         exp3_nn_model_wise(args)
     if 4 in exps:
         exp4_epoch_wise_nn(args)
+    if 5 in exps:
+        exp5_architecture_comparison(args)
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")

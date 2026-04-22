@@ -55,17 +55,20 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    """ResNet with configurable width multiplier k."""
+    """ResNet with configurable width multiplier k (supports fractional k)."""
 
     def __init__(self, num_classes=10, k=1):
         super().__init__()
-        self.in_planes = 16 * k
-        self.conv1 = nn.Conv2d(3, 16 * k, 3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(16 * k)
-        self.layer1 = self._make_layer(16 * k, 2, stride=1)
-        self.layer2 = self._make_layer(32 * k, 2, stride=2)
-        self.layer3 = self._make_layer(64 * k, 2, stride=2)
-        self.linear = nn.Linear(64 * k, num_classes)
+        k16 = max(1, int(16 * k))
+        k32 = max(1, int(32 * k))
+        k64 = max(1, int(64 * k))
+        self.in_planes = k16
+        self.conv1 = nn.Conv2d(3, k16, 3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(k16)
+        self.layer1 = self._make_layer(k16, 2, stride=1)
+        self.layer2 = self._make_layer(k32, 2, stride=2)
+        self.layer3 = self._make_layer(k64, 2, stride=2)
+        self.linear = nn.Linear(k64, num_classes)
 
     def _make_layer(self, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
