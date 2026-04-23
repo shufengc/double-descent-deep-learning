@@ -87,6 +87,18 @@ python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
 | 8 | Effective Model Complexity | EMC saturates at n=4000 by epoch 50 — model stays over-parameterized throughout training |
 | Arch | Architecture comparison (MLP/CNN/ResNet) | Negative finding: all architectures collapse to random chance under Adam + noise + no regularization |
 
+**Exp 1 — Textbook double descent curve (RFF on MNIST):**
+
+![RFF model-wise DD](results/exp1_model_wise_rff/dd_curves.png)
+
+**Exp 6 — Bias-variance decomposition (peak is pure variance):**
+
+![Bias-variance decomposition](results/expB_bias_variance/dd_curves.png)
+
+**Exp 7 — Epoch-wise training: SGD vs Adam on ResNet:**
+
+![Epoch-wise SGD vs Adam](results/expC_epoch_sgd_resnet/dd_curves.png)
+
 ### Teammate Contributions (cherry-picked into main)
 
 | Contributor | Experiment | Key Finding |
@@ -97,6 +109,18 @@ python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
 | Yusheng | σ sensitivity | Kernel bandwidth σ=5 optimal (89.3% acc); σ<2 gives random chance |
 | Yizheng | Multi-seed framework (3 seeds) | Seed=42 results match ours exactly; ±σ uncertainty bands for all RFF curves |
 | Yizheng | Theory connections | λ sweep → Hastie theorem; SGD+augment → Nakkiran's "hidden DD" |
+
+**Zhengda — Ridge regularization eliminates the DD peak:**
+
+![Ridge lambda sweep](results/zhengda_exp5_lambda/dd_curves.png)
+
+**Yusheng — Spectral analysis: condition number explosion at p/n=1:**
+
+![Spectral analysis](results/yusheng_exp7_spectral/dd_curves.png)
+
+**Yusheng — Kernel bandwidth (σ) sensitivity:**
+
+![Sigma sensitivity](results/yusheng_exp9_sigma/dd_curves.png)
 
 ## Connection to Course Material
 
