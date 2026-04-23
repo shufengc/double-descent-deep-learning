@@ -14,7 +14,9 @@ class Trainer:
     """Handles model training and evaluation with metric logging."""
 
     def __init__(self, model, device="cpu", lr=0.01, momentum=0.9,
-                 weight_decay=0.0, optimizer_type="sgd", scheduler_type=None):
+                 weight_decay=0.0, optimizer_type="sgd", scheduler_type=None,
+                 scheduler_tmax=None, scheduler_step_size=50,
+                 scheduler_gamma=0.1):
         self.model = model.to(device)
         self.device = device
         self.criterion = nn.CrossEntropyLoss()
@@ -31,11 +33,13 @@ class Trainer:
 
         self.scheduler = None
         if scheduler_type == "cosine":
+            t_max = scheduler_tmax or 200
             self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer, T_max=200)
+                self.optimizer, T_max=t_max)
         elif scheduler_type == "step":
             self.scheduler = optim.lr_scheduler.StepLR(
-                self.optimizer, step_size=50, gamma=0.1)
+                self.optimizer, step_size=scheduler_step_size,
+                gamma=scheduler_gamma)
 
         self.history = defaultdict(list)
 

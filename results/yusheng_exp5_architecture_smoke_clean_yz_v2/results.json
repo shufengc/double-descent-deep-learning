@@ -1,0 +1,46 @@
+{
+  "CNN": [
+    {
+      "arch": "CNN",
+      "width": 8,
+      "width_id": "8",
+      "num_params": 11162,
+      "p_over_n": 2.7905,
+      "train_loss": 1.0716341829299927,
+      "train_acc": 61.125,
+      "test_loss": 1.1786948877334595,
+      "test_acc": 58.64,
+      "best_test_acc": 58.76,
+      "elapsed_s": 54.5,
+      "optimizer": "sgd",
+      "lr": 0.05,
+      "momentum": 0.9,
+      "weight_decay": 0.0001,
+      "scheduler": "cosine",
+      "augment": true,
+      "epochs": 50
+    }
+  ],
+  "ResNet": [
+    {
+      "arch": "ResNet",
+      "width": 0.5,
+      "width_id": "0.5",
+      "num_params": 44370,
+      "p_over_n": 11.0925,
+      "train_loss": 0.7150778503417968,
+      "train_acc": 74.25,
+      "test_loss": 1.0842579248428346,
+      "test_acc": 63.17,
+      "best_test_acc": 63.17,
+      "elapsed_s": 56.9,
+      "optimizer": "sgd",
+      "lr": 0.05,
+      "momentum": 0.9,
+      "weight_decay": 0.0001,
+      "scheduler": "cosine",
+      "augment": true,
+      "epochs": 50
+    }
+  ]
+}

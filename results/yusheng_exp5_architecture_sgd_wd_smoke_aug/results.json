@@ -1,0 +1,68 @@
+{
+  "MLP": [
+    {
+      "arch": "MLP",
+      "width": 20,
+      "width_id": "20",
+      "num_params": 61670,
+      "p_over_n": 15.4175,
+      "train_loss": 2.262865058898926,
+      "train_acc": 13.975,
+      "test_loss": 2.637298285293579,
+      "test_acc": 6.07,
+      "best_test_acc": 10.17,
+      "elapsed_s": 107.5,
+      "optimizer": "sgd",
+      "lr": 0.1,
+      "momentum": 0.9,
+      "weight_decay": 0.0005,
+      "scheduler": "cosine",
+      "augment": true,
+      "epochs": 100
+    }
+  ],
+  "CNN": [
+    {
+      "arch": "CNN",
+      "width": 8,
+      "width_id": "8",
+      "num_params": 11162,
+      "p_over_n": 2.7905,
+      "train_loss": 2.1655804481506347,
+      "train_acc": 20.475,
+      "test_loss": 2.7352017330169676,
+      "test_acc": 4.32,
+      "best_test_acc": 9.9,
+      "elapsed_s": 107.0,
+      "optimizer": "sgd",
+      "lr": 0.1,
+      "momentum": 0.9,
+      "weight_decay": 0.0005,
+      "scheduler": "cosine",
+      "augment": true,
+      "epochs": 100
+    }
+  ],
+  "ResNet": [
+    {
+      "arch": "ResNet",
+      "width": 0.5,
+      "width_id": "0.5",
+      "num_params": 44370,
+      "p_over_n": 11.0925,
+      "train_loss": 1.9067813816070556,
+      "train_acc": 33.825,
+      "test_loss": 2.949119602584839,
+      "test_acc": 5.64,
+      "best_test_acc": 10.74,
+      "elapsed_s": 112.4,
+      "optimizer": "sgd",
+      "lr": 0.1,
+      "momentum": 0.9,
+      "weight_decay": 0.0005,
+      "scheduler": "cosine",
+      "augment": true,
+      "epochs": 100
+    }
+  ]
+}
