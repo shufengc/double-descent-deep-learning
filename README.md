@@ -95,9 +95,11 @@ python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
 
 ![Bias-variance decomposition](results/expB_bias_variance/dd_curves.png)
 
-**Exp 7 — Epoch-wise training: SGD vs Adam on ResNet:**
+**Exp 7 — Epoch-wise training: SGD vs Adam on ResNet (re-run on 04-23 with valid test checkpoints):**
 
-![Epoch-wise SGD vs Adam](results/expC_epoch_sgd_resnet/dd_curves.png)
+![Epoch-wise SGD vs Adam (test error + train accuracy)](results/expC_epoch_sgd_resnet/dd_curves.png)
+
+![Epoch-wise DD panel (full checkpoints)](results/expC_epoch_sgd_resnet/epoch_wise_dd.png)
 
 ### Teammate Contributions (cherry-picked into main)
 
