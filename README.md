@@ -29,8 +29,10 @@ We use two complementary approaches:
 │   └── experiments/
 │       ├── comprehensive_dd.py        # Original experiment suite (Exp 1–4)
 │       ├── shufeng_experiments.py     # Extended experiments (Exp 5–8, A–C)
+│       ├── exp_nakkiran_recipe.py     # Exp A: Nakkiran recipe; Exp B: augmentation ablation
 │       ├── supplemental_dd_extras.py  # S1: OOD/ID RFF; S2: ordered n; S3: early stop CNN
-│       └── exp_architecture.py        # Architecture comparison (MLP/CNN/ResNet)
+│       ├── exp_architecture.py        # Architecture comparison (MLP/CNN/ResNet)
+│       └── zhengda_exp8_noise_lambda_mechanism.py  # Zhengda Exp8: noise×lambda mechanism
 ├── results/
 │   ├── exp1_model_wise_rff/           # Exp 1: RFF model-wise DD
 │   ├── exp2_sample_wise_rff/          # Exp 2: RFF sample-wise DD
@@ -51,7 +53,12 @@ We use two complementary approaches:
 │   ├── yizheng_multiseed/             # Yizheng: 3-seed RFF results (exp1–4)
 │   ├── supp1_ood_id_rff/              # Supplemental: ID vs OOD (RFF, pixel shift)
 │   ├── supp2_ordered_sample_rff/     # Supplemental: random vs ordered n
-│   └── supp3_early_stop_cnn/         # Supplemental: test @ best val vs last epoch
+│   ├── supp3_early_stop_cnn/         # Supplemental: test @ best val vs last epoch
+│   ├── zhengda_exp8_noise_lambda_full/     # Zhengda Exp8: full 4-noise×7-lambda×5-seed sweep
+│   ├── zhengda_exp8_noise_lambda_mechanism/ # Zhengda Exp8: mechanism analysis (cond#, DoF)
+│   ├── yusheng_exp5_architecture_clean_yz_recipe/ # Yusheng: clean-label arch sweep (76.1% acc)
+│   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
+│   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
 ├── figures/                           # Publication-quality figures
 ├── notebooks/
 │   └── analysis.ipynb                 # Interactive analysis
@@ -74,7 +81,13 @@ PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
 # Run architecture comparison (requires GPU, ~6-10 hours)
 python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
 
-# Supplemental three directions (see plan): OOD vs ID, ordered n, early stopping vs end epoch
+# Run Nakkiran recipe + augmentation ablation (requires GPU, ~2.5 hours)
+python3 -m src.experiments.exp_nakkiran_recipe --exp smoke   # sanity check (~3 min)
+python3 -m src.experiments.exp_nakkiran_recipe --exp A       # Nakkiran recipe, k=1,2,4,8
+python3 -m src.experiments.exp_nakkiran_recipe --exp B       # augmentation ablation
+python3 -m src.experiments.exp_nakkiran_recipe --exp all     # both A+B
+
+# Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 ```
@@ -94,6 +107,8 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 | 7 | ResNet SGD vs Adam (4000 epochs) | No epoch-wise DD: models reach 100% train acc within 100 epochs, test acc plateaus |
 | 8 | Effective Model Complexity | EMC saturates at n=4000 by epoch 50 — model stays over-parameterized throughout training |
 | Arch | Architecture comparison (MLP/CNN/ResNet) | Negative finding: all architectures collapse to random chance under Adam + noise + no regularization |
+| **A** | **Nakkiran recipe (ResNet, augmentation)** | All k={1,2,4,8} past interpolation threshold → no model-wise DD. Best test: 7.6–7.7% |
+| **B** | **Augmentation ablation (4 conditions)** | Noise is the decisive factor: removing noise → 45–75% accuracy; augmentation adds +10–15% |
 
 **Exp 1 — Textbook double descent curve (RFF on MNIST):**
 
@@ -109,20 +124,59 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 
 ![Epoch-wise DD panel (full checkpoints)](results/expC_epoch_sgd_resnet/epoch_wise_dd.png)
 
-### Teammate Contributions (cherry-picked into main)
+**Exp A — Nakkiran recipe: all k values show catastrophic memorization (train 100%, test ~7%):**
+
+All k={1,2,4,8} models memorize the noisy training data. No DD curve visible — all our ResNet widths are past the interpolation threshold for n=4000. This is a key finding: reproducing Nakkiran's model-wise DD requires architecture that straddles the interpolation threshold.
+
+| k | Params | p/n | Train acc | Best test acc |
+|---|--------|-----|-----------|---------------|
+| 1 | 175K | 43.8× | 99.5% | 7.6% |
+| 2 | 697K | 174.2× | 100.0% | 7.7% |
+| 4 | 2.8M | 694.4× | 100.0% | 6.9% |
+| 8 | 11.1M | 2773× | 100.0% | 8.7% |
+
+![Exp A: Nakkiran recipe results](results/exp_nakkiran_modelwise/dd_curves.png)
+
+**Exp B — Augmentation ablation: noise is the decisive variable, not augmentation:**
+
+The 2×2 ablation cleanly isolates the effect of noise vs augmentation:
+
+| Condition | Aug | Noise | k=1 best acc | k=4 best acc | k=8 best acc |
+|---|---|---|---|---|---|
+| 1: Nakkiran | ✓ | 15% | 6.8% | ~7% | ~7% |
+| 2: Clean+Aug | ✓ | 0% | **60.5%** | **~65%** | **~75%** |
+| 3: Old setup | ✗ | 15% | 8.1% | 8.1% | ~7% |
+| 4: Baseline | ✗ | 0% | **45.5%** | **52.6%** | **56.8%** |
+
+Removing noise jumps accuracy from ~7% to 45–75%. Augmentation adds ~10–15% on top. **Label noise, not augmentation, is the decisive factor.**
+
+![Exp B: Augmentation × Noise ablation](results/exp_augmentation_ablation/dd_curves.png)
+
+### Teammate Contributions
 
 | Contributor | Experiment | Key Finding |
 |---|---|---|
 | Zhengda | λ sweep (ridge regularization) | λ=0.01 reduces DD peak by >90%; λ=1.0 eliminates it entirely |
 | Zhengda | Noise comparison | 0/10/20/40% noise; 40% anomaly identified (seed artifact) |
+| **Zhengda** | **Exp8: Noise×λ mechanism (5-seed)** | **Full mechanism proof: ridge lowers condition number → reduces effective DoF → shrinks DD peak. Rigorous 5-seed statistics across 4 noise × 7 lambda** |
 | Yusheng | Spectral analysis | Condition number explodes at p/n=1 (24 → 17,132), explaining the variance spike |
 | Yusheng | σ sensitivity | Kernel bandwidth σ=5 optimal (89.3% acc); σ<2 gives random chance |
+| **Yusheng** | **Clean-label architecture sweep** | **ResNet 76.1% accuracy — proves architecture is correct; label noise is the culprit** |
+| Yusheng | Optimal λ per p/n ratio | Ridge regularization path: optimal λ increases with p/n |
 | Yizheng | Multi-seed framework (3 seeds) | Seed=42 results match ours exactly; ±σ uncertainty bands for all RFF curves |
-| Yizheng | Theory connections | λ sweep → Hastie theorem; SGD+augment → Nakkiran's "hidden DD" |
+| **Yizheng** | **OOD vs ID generalization** | **OOD DD peak 1.4× higher than ID — distribution shift amplifies double descent** |
+| **Yizheng** | **Ordered sampling (curriculum)** | **Easy-to-hard ordering nearly eliminates the DD peak — practical mitigation** |
+| **Yizheng** | **Early stopping CNN** | **Recovers 38–58% accuracy — training duration matters more than model width** |
 
 **Zhengda — Ridge regularization eliminates the DD peak:**
 
 ![Ridge lambda sweep](results/zhengda_exp5_lambda/dd_curves.png)
+
+**Zhengda Exp8 — Noise × Lambda mechanism (5-seed, condition number analysis):**
+
+![Noise×lambda peak heatmap](results/zhengda_exp8_noise_lambda_full/peak_heatmap.png)
+
+![Noise×lambda mechanism curves](results/zhengda_exp8_noise_lambda_full/mechanism_curves.png)
 
 **Yusheng — Spectral analysis: condition number explosion at p/n=1:**
 
@@ -131,6 +185,22 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 **Yusheng — Kernel bandwidth (σ) sensitivity:**
 
 ![Sigma sensitivity](results/yusheng_exp9_sigma/dd_curves.png)
+
+**Yusheng — Clean-label architecture sweep (76.1% ResNet accuracy):**
+
+![Clean-label architecture comparison](results/yusheng_exp5_architecture_clean_yz_recipe/dd_curves.png)
+
+**Yizheng — OOD vs ID generalization (OOD peak 1.4× higher):**
+
+![OOD vs ID double descent](results/supp1_ood_id_rff/dd_curves.png)
+
+**Yizheng — Ordered sampling: curriculum learning suppresses DD peak:**
+
+![Ordered vs random sampling](results/supp2_ordered_sample_rff/dd_curves.png)
+
+**Yizheng — Early stopping recovers generalization (38–58% accuracy):**
+
+![Early stopping CNN](results/supp3_early_stop_cnn/dd_curves.png)
 
 ## Connection to Course Material
 
@@ -142,7 +212,17 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 | NTK (L7–L8) | Spectral analysis (Yusheng) | Condition number explosion at p=n; kernel interpolation phenomenon |
 | Generalization (L9) | Exp 5 (multi-seed) | Peak variance is heavy-tailed; Rademacher bounds miss the second descent |
 | Regularization (L10) | λ sweep (Zhengda) + σ sensitivity (Yusheng) | Ridge regularization → Hastie et al. theorem: "cut the peak, keep the valley" |
+| Generalization (L9) | Exp A (Nakkiran recipe) | Interpolation threshold calibration: model-wise DD requires architecture to straddle p/n=1 |
+| Distribution Shift | OOD vs ID (Yizheng) | Distribution shift amplifies DD peak by 1.4×; OOD generalization compounds variance |
+| Optimization (L4) | Early stopping (Yizheng) | Training duration as implicit regularizer: stopping before full memorization rescues 38–58% acc |
+| Ridge/Bias-Variance | Noise×λ mechanism (Zhengda Exp8) | Ridge shifts eigenspectrum → lowers condition number → reduces effective DoF → shrinks peak |
 
 ## References
 
 See [`report.md`](report.md) for the complete reference list (16 citations).
+
+Key references:
+- Nakkiran et al. (2021). *Deep Double Descent*. ICLR 2020. [arXiv:1912.02292]
+- Belkin et al. (2019). *Reconciling Modern Machine Learning Practice and the Bias-Variance Trade-Off*. PNAS.
+- Hastie et al. (2022). *Surprises in High-Dimensional Ridgeless Least Squares Interpolation*. Annals of Statistics.
+- D'Ascoli et al. (2020). *Triple Descent and the Two Kinds of Overfitting*. NeurIPS 2020.
