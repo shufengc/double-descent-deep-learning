@@ -29,6 +29,7 @@ We use two complementary approaches:
 │   └── experiments/
 │       ├── comprehensive_dd.py        # Original experiment suite (Exp 1–4)
 │       ├── shufeng_experiments.py     # Extended experiments (Exp 5–8, A–C)
+│       ├── supplemental_dd_extras.py  # S1: OOD/ID RFF; S2: ordered n; S3: early stop CNN
 │       └── exp_architecture.py        # Architecture comparison (MLP/CNN/ResNet)
 ├── results/
 │   ├── exp1_model_wise_rff/           # Exp 1: RFF model-wise DD
@@ -47,7 +48,10 @@ We use two complementary approaches:
 │   ├── yusheng_exp9_sigma/            # Yusheng: Kernel bandwidth sensitivity
 │   ├── yusheng_exp5_architecture/     # Yusheng: Architecture comparison (ref)
 │   ├── yusheng_exp8_optimal_lambda/   # Yusheng: Optimal λ per ratio
-│   └── yizheng_multiseed/             # Yizheng: 3-seed RFF results (exp1–4)
+│   ├── yizheng_multiseed/             # Yizheng: 3-seed RFF results (exp1–4)
+│   ├── supp1_ood_id_rff/              # Supplemental: ID vs OOD (RFF, pixel shift)
+│   ├── supp2_ordered_sample_rff/     # Supplemental: random vs ordered n
+│   └── supp3_early_stop_cnn/         # Supplemental: test @ best val vs last epoch
 ├── figures/                           # Publication-quality figures
 ├── notebooks/
 │   └── analysis.ipynb                 # Interactive analysis
@@ -69,6 +73,10 @@ PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
 
 # Run architecture comparison (requires GPU, ~6-10 hours)
 python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
+
+# Supplemental three directions (see plan): OOD vs ID, ordered n, early stopping vs end epoch
+# S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
+python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 ```
 
 ## Experiments and Key Results
