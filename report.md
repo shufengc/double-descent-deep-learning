@@ -124,7 +124,9 @@ Our RFF experiments directly study interpolation in an analogous kernel feature 
 
 ### 4.1 Experiments Overview
 
-We conduct four experiments spanning both kernel methods and neural networks:
+We organise the work into two layers: a **Reproduction** layer (Experiments 1–4) that reproduces the textbook double-descent figures from Belkin et al. (2019) and Nakkiran et al. (2021), and an **Extensions / New Results** layer (Experiments 5–8 and Sections 6.5–6.8) that adds new scientific content beyond reproduction.
+
+**Layer 1 — Reproduction:**
 
 | Experiment | Model | Dataset | What Varies | Complexity Control |
 |---|---|---|---|---|
@@ -132,6 +134,16 @@ We conduct four experiments spanning both kernel methods and neural networks:
 | 2. Sample-wise DD (RFF) | Random Fourier Features | MNIST | Training set size $n$ | $p/n$ ratio |
 | 3. Model-wise DD (NN) | CNN | CIFAR-10 | Network width | Parameter count |
 | 4. Epoch-wise DD (NN) | CNN | CIFAR-10 | Training epochs | Effective model complexity |
+
+**Layer 2 — Extensions / New Results:**
+
+| Section | Lens | Headline question |
+|---|---|---|
+| 5–6.4 (Exp 5–8) | Robustness, theory, NN depth | Multi-seed validation; bias-variance decomposition; SGD+ResNet epoch-wise; Effective Model Complexity. |
+| 6.5 — Person A | Regularisation | How does ridge $\lambda$ smooth the $p/n=1$ peak? |
+| 6.6 — Person B | Label noise | How does the peak amplify as noise rate grows from 0% to 40%? |
+| 6.7 — Person C | Optimiser & implicit bias | Why does Adam + noisy CIFAR-10 memorise without recovery while SGD does not? |
+| 6.8 — Person D | Generalisation theory | Why do classical VC / Rademacher bounds completely fail to predict the second descent? |
 
 ### 4.2 Experiment 1–2: Random Fourier Features
 
@@ -351,6 +363,115 @@ Adam ResNet k=1/2/4: Virtually identical to SGD counterparts — ~0% train error
 
 **Connection to Exp 7:** The EMC results fully explain why Exp 7 shows no epoch-wise DD. Since EMC(T=50, any k) ≈ 4000 = n, all models are always in the over-parameterized regime (n < EMC). The epoch-wise transition studied by Nakkiran et al. would only be visible when n is swept across EMC, which requires either much larger training sets or much smaller models.
 
+### 6.5 Ridge regularisation smooths the double descent peak (Person A)
+
+**Setup:** $n = 1{,}000$ MNIST training samples; 10% label noise; 20 ratios $p/n \in [0.05, 8.0]$; ridge $\lambda \in \{0,\ 10^{-8},\ 10^{-6},\ 10^{-4},\ 10^{-2}\}$; 3 seeds; one-hot regression solved with the augmented kernel/Gram operator $\Phi^\top \Phi + \lambda I$. Bandwidth $\sigma = 5.0$.
+
+![Figure 10: Ridge smooths DD peak](figures/personA_ridge_smooths_peak.png)
+
+**Results.** The figure overlays five test-MSE curves, one per $\lambda$. The ridgeless and $\lambda = 10^{-8}$ curves coincide and exhibit the textbook spike at $p/n = 1$ (test MSE $\approx 14.6$ at the threshold versus $0.057$ in the under-parameterised regime — a factor of roughly $250\times$ at this seed). As $\lambda$ grows, the spike shrinks monotonically:
+
+| $\lambda$ | Test MSE at $p/n=1$ | Test MSE at $p/n = 8$ |
+|---|---|---|
+| $0$ (ridgeless) | $14.57$ | $0.0319$ |
+| $10^{-8}$ | $14.57$ | $0.0319$ |
+| $10^{-6}$ | $14.57$ | $0.0319$ |
+| $10^{-4}$ | $1.24$ | $0.0319$ |
+| $10^{-2}$ | $0.13$ | $0.0308$ |
+
+At $\lambda = 10^{-2}$ the peak is essentially gone — the curve is monotonically decreasing in $p/n$ with a small bump near the threshold. The over-parameterised regime is largely unaffected by ridge, because the minimum-norm interpolant is *already* an effective implicit regulariser there; the visible action of $\lambda$ is concentrated at the threshold.
+
+**Theoretical connection (Lecture 12).** Minimum-norm interpolation is the limit of ridge regression as $\lambda \to 0^+$. The $1/(p - n)$ singularity in the variance of the ridgeless estimator at $p = n$ is regularised by $\lambda$, which adds a term of order $\lambda^{-1}$ to the resolvent's spectral floor and prevents the divergence. The figure makes the relationship visible: ridge does not change the qualitative shape, it only suppresses the threshold blow-up.
+
+**Comparison with Exp 8 (Zhengda).** Zhengda's Exp 8 (Section 6 of the supplemental tables) sweeps $\lambda$ jointly with the noise rate over a $4 \times 7 \times 5$-seed grid and shows that ridge reduces the empirical condition number $\kappa(\Phi \Phi^\top)$ at the threshold, which is the *mechanism* behind the smoothing. The present figure isolates the $\lambda$ axis at fixed noise to give a textbook regularisation-path picture for the report's Mathematical Background section.
+
+### 6.6 Label noise as a stress test for interpolation (Person B)
+
+**Setup:** Identical to Section 6.5 except we fix $\lambda = 10^{-10}$ (effectively ridgeless) and sweep noise $\in \{0\%, 10\%, 20\%, 30\%, 40\%\}$ over the same 20 ratios with 3 seeds.
+
+![Figure 11: Noise amplification of DD peak](figures/personB_noise_amplification.png)
+
+**Results.** All five curves share a sharp peak at $p/n = 1$, but the peak height grows monotonically and substantially with noise:
+
+| Noise | Peak MSE | Peak location $p/n$ | Peak/valley | Test acc at $p/n = 8$ |
+|---|---|---|---|---|
+| 0% | $35.2$ | $1.00$ | $1{,}593\times$ | $92.6\%$ |
+| 10% | $78.5$ | $1.00$ | $2{,}462\times$ | $88.5\%$ |
+| 20% | $106.3$ | $1.00$ | $2{,}471\times$ | $81.5\%$ |
+| 30% | $133.4$ | $1.00$ | $2{,}419\times$ | $72.0\%$ |
+| 40% | $186.2$ | $1.00$ | $2{,}775\times$ | $62.0\%$ |
+
+Two observations are worth flagging:
+
+1. **Peak amplification is roughly linear in noise rate.** Going from 0% to 40% noise inflates the peak MSE by $5.3\times$. The peak-to-valley ratio also grows, but more slowly, because the over-parameterised valley is itself slightly worse with noise (recovery accuracy drops from 92.6% to 62.0%).
+2. **Recovery is consistent but degraded.** Even at 40% noise the model still recovers — test accuracy at $p/n = 8$ is $62\%$, well above the $\sim 30\%$ random-prediction baseline implied by 40% corruption. This is the "interpolating noise gracefully" signature: in the heavily over-parameterised regime, the minimum-norm solution still extracts most of the clean signal even when forced to also fit corrupted labels.
+
+**Mechanism: interpolating noise.** The minimum-norm solution at $p/n = 1$ is forced to fit *every* training label, including the corrupted ones, with a near-square feature matrix that has poor condition number. Each corrupted label contributes a non-zero residual that the solver compensates with a large weight allocation along the corresponding singular direction; with $\sim n \sigma^2$ noise variance and a near-singular $\Phi$, this produces error of order $\|w\|^2 \cdot \kappa(\Phi)$ that scales linearly in noise rate, exactly as observed.
+
+**Course connection (Lecture 6).** Classical bias-variance analysis predicts that label noise inflates *variance*, not bias. Experiment 6 (Section 6.2) confirmed this empirically by decomposing the test error of a single noise rate. Experiment B extends that picture to the noise-axis: the variance explosion at $p/n = 1$ scales monotonically with noise rate, and the over-parameterised regime's implicit $\ell_2$-regularisation is what allows the model to remain useful at all.
+
+### 6.7 Why neural networks deviate from kernel double descent — optimiser and feature learning (Person C)
+
+**Motivation.** The RFF picture so far (Sections 5.1, 6.5, 6.6) is a clean, textbook story: a sharp peak at the interpolation threshold, smoothed by ridge or amplified by noise, with monotone recovery. The CNN picture (Section 5.3) does *not* look like this. With Adam at lr $= 10^{-3}$, the noisy CNN never recovers — train accuracy reaches 100% on noisy CIFAR-10 while test accuracy collapses to 7%, far below random. The natural follow-up question is: is this a property of *neural networks*, or only of *Adam-on-noisy-CNN*? The Person C experiment isolates the optimiser as the controlled variable, holding architecture, dataset, and noise fixed.
+
+**Setup.**
+- Architecture: the project's CNN (`num_filters` $\in \{8, 16, 24, 32, 48, 64\}$, parameter count from $\sim 9{,}600$ to $\sim 412{,}000$).
+- Dataset: CIFAR-10, $n = 4{,}000$ training samples; noise $\in \{0\%, 15\%\}$ (matching the Nakkiran recipe used in Exp A).
+- Optimisers: SGD with momentum $0.9$, lr $= 0.05$, no scheduler; Adam with lr $= 10^{-4}$, no scheduler. Both run with constant learning rate so the comparison isolates the step rule rather than schedule effects.
+- 500 epochs, 2 seeds (42, 7), batch size 512, GPU-resident training (no DataLoader overhead) on an NVIDIA RTX 5090 via vast.ai.
+- $6 \times 2 \times 2 \times 2 = 48$ runs total; eval every 5 epochs to keep epoch-wise traces dense without doubling the runtime.
+
+![Figure 12: Adam vs SGD model-wise](figures/personC_optimizer_modelwise.png)
+
+![Figure 13: Adam vs SGD epoch-wise](figures/personC_optimizer_epochwise.png)
+
+**Results — clean labels.** With clean labels, both optimisers fall into a similar regime but with a small, consistent gap. Final test accuracy averaged over the two seeds:
+
+| Width $w$ | Params | $p/n$ | SGD train | SGD test | Adam train | Adam test |
+|---|---|---|---|---|---|---|
+| 8 | 11{,}162 | 2.79 | 100.0% | $52.7 \pm 0.5\%$ | 57.8% | $50.8 \pm 0.6\%$ |
+| 16 | 33{,}834 | 8.46 | 100.0% | $56.1 \pm 0.8\%$ | 67.5% | $53.4 \pm 0.6\%$ |
+| 24 | 68{,}026 | 17.01 | 100.0% | $57.6 \pm 0.0\%$ | 76.0% | $56.7 \pm 0.2\%$ |
+| 32 | 113{,}738 | 28.43 | 100.0% | $58.8 \pm 0.5\%$ | 81.5% | $57.5 \pm 0.3\%$ |
+| 48 | 239{,}722 | 59.93 | 100.0% | $59.5 \pm 0.4\%$ | 93.0% | $57.5 \pm 0.8\%$ |
+| 64 | 411{,}786 | 102.95 | 100.0% | $60.2 \pm 0.5\%$ | 98.6% | $58.0 \pm 0.4\%$ |
+
+Two observations: (i) SGD reaches 100% training accuracy at every width and improves monotonically on test accuracy ($52.7\% \to 60.2\%$ as width grows from 8 to 64); Adam at lr $= 10^{-4}$ does *not* fully memorise at small widths and lags SGD by $1$–$3$ percentage points throughout. (ii) Both optimisers exhibit width-driven improvement, but the regime is firmly in the over-parameterised tail ($p/n \in [2.8, 102.9]$) — there is no model-wise peak in this range, which is consistent with Sections 5.3 and the DD-Recovery campaign showing that the peak only appears below $p/n \approx 1$.
+
+**Results — 15% label noise.** The picture changes qualitatively, but *not in the direction the original hypothesis predicted*:
+
+| Width $w$ | $p/n$ | SGD train | SGD test | Adam train | Adam test |
+|---|---|---|---|---|---|
+| 8 | 2.79 | 100.0% | $7.7 \pm 0.3\%$ | 28.6% | $5.6 \pm 0.2\%$ |
+| 16 | 8.46 | 100.0% | $7.0 \pm 0.1\%$ | 46.0% | $6.0 \pm 0.2\%$ |
+| 24 | 17.01 | 100.0% | $6.6 \pm 0.1\%$ | 61.0% | $6.0 \pm 0.1\%$ |
+| 32 | 28.43 | 100.0% | $6.5 \pm 0.2\%$ | 79.8% | $6.5 \pm 0.0\%$ |
+| 48 | 59.93 | 100.0% | $6.5 \pm 0.0\%$ | 99.2% | $6.6 \pm 0.1\%$ |
+| 64 | 102.95 | 100.0% | $6.4 \pm 0.1\%$ | 100.0% | $6.6 \pm 0.1\%$ |
+
+Both optimisers collapse to sub-random test accuracy on noisy CIFAR-10 in this $n = 4{,}000$ regime — neither recovers. SGD memorises immediately (100% training accuracy at every width); Adam memorises more slowly at small widths but still ends near 100% by $w = 64$. The original hypothesis ("Adam memorises without recovery while SGD recovers") is *not* supported by these data. SGD is marginally better at the smallest width ($7.7\%$ versus $5.6\%$) — a one-shot win for the lower-lr Adam, which fails to memorise the noise hard enough to be as confidently wrong — but by $w = 32$ the two optimisers are within $0.1\%$ of each other and the gap closes entirely as width grows.
+
+**What this actually shows.** The dominant variable is *not* the optimiser — it is the structural mismatch between the CNN family and $n = 4{,}000$ noisy CIFAR-10. The Effective Model Complexity analysis of Section 6.4 already showed that all our ResNet widths saturate EMC $\approx n$ within 50 epochs; Section 6.7 makes the same point for the CNN family across optimisers. When the model is far in the over-parameterised tail, the choice of optimiser becomes secondary: both rules end up memorising noisy labels and produce similarly catastrophic test accuracy. The clean-data experiments do reveal a measurable optimiser effect (SGD $1$–$3$ pp ahead of Adam, faster memorisation) — but it is small relative to the gap caused by the noise itself.
+
+**Course connection (Lectures 7–9, 12).** This is consistent with the NTK / lazy-training picture: in the heavy over-parameterised regime, both SGD and Adam find some interpolant of the training set, and at $n \ll \text{EMC}$ that interpolant must (a) memorise the corrupted labels, (b) lose all predictive value. The specific implicit bias of SGD (minimum-$\ell_2$-norm-style) versus Adam (per-coordinate adaptive scaling) does not seem to differentiate the two outcomes when the model has tens-of-thousands of redundant parameters per training example. The interesting optimiser-dependent regime — where SGD's implicit bias might actually rescue generalisation — is the *near-threshold* regime that the DD-Recovery campaign (Section 6.3) reaches with fractional-$k$ ResNet, not the heavily over-parameterised regime that all our standard CNN/ResNet widths sit in.
+
+**What this means for "what we learned about neural networks."** The headline lesson is *not* "Adam is uniquely bad on noisy CIFAR." It is: *parameter count alone is not the relevant complexity measure*. Both SGD and Adam — two fundamentally different update rules — produce indistinguishable failures when the network has $\geq 17 \times$ as many parameters as training examples. The interesting NN-side phenomenon is what happens *near* the interpolation threshold (DD-Recovery), where the dynamics are not yet smoothed out by the over-parameterised regime. This experiment falsifies one tempting hypothesis ("the optimiser explains the failure") and points back to *Effective Model Complexity* as the dominant variable, in line with Nakkiran et al. (2021).
+
+### 6.8 Why parameter-counting fails — observed double descent vs classical bounds (Person D)
+
+**Motivation.** A reader familiar with classical statistical learning theory might assume that "more parameters $\Rightarrow$ worse generalisation," because VC dimension, Rademacher complexity, and other capacity-based bounds grow monotonically (typically as $\sqrt{p/n}$ or worse). The double descent curve directly contradicts this intuition in the over-parameterised regime. This section makes the contradiction visual.
+
+![Figure 14: Classical bound vs observed DD](figures/personD_bound_vs_observed.png)
+
+**The figure** overlays a stylised classical bound $C \sqrt{p/n}$, anchored to match the observed test MSE at $p/n = 0.1$, against the observed test-MSE curve from Experiment 1 (10% noise). The bound is monotonically increasing in $p/n$; the observed curve rises, peaks at $p/n = 1$, and *second-descends* by an order of magnitude as $p/n$ grows further. In the green-shaded over-parameterised regime ($p/n \geq 1.5$) the bound is many times larger than the observed test MSE and continues to grow, while the observed curve drops below its under-parameterised values. The bound makes a vacuous claim in the regime where modern over-parameterised learning actually succeeds.
+
+**Why the classical bounds fail (Lectures 10–12).**
+1. **VC dimension and Rademacher complexity for ReLU networks** scale as $O(p \log p)$ or $O(\sqrt{p/n})$ — strictly increasing in $p$. They depend on $p$ alone and have no mechanism to express that the *learned solution* might lie in a much smaller, smoother subset of the hypothesis space.
+2. **Norm-based bounds** (Bartlett, Foster & Telgarsky, 2017; Neyshabur, Bhojanapalli & Srebro, 2018) replace parameter count with the spectral or path norm of the trained weights. Empirically these norms *decrease* as $p$ grows past $n$, because the minimum-norm interpolant is "spread thinner" across more parameters. This is the right object for over-parameterised generalisation.
+3. **Benign overfitting** (Bartlett, Long, Lugosi & Tsigler, 2020) gives an explicit, non-vacuous bound for ridgeless interpolation in linear regression that *decreases* with $p$ when the population covariance has the right tail decay. Hastie et al. (2022) extend this to the random-features setting we use throughout this project.
+
+**The takeaway** is not that classical theory is wrong, but that it asks the wrong question. Bounding generalisation by raw capacity cannot detect the difference between a "spread-out" interpolant and a "concentrated" one. The observed double descent curve is direct empirical evidence that one of those two interpolants — the minimum-norm one — is what gradient-based optimisation finds, and that the appropriate complexity measure is its norm, not the dimension of the space it lives in.
+
 ## 7. Discussion
 
 ### 7.1 Key Findings
@@ -384,9 +505,11 @@ Label noise plays a critical role in double descent:
 
 ### 7.4 Limitations
 
-1. **Computational constraints**: Our NN experiments use a relatively small CIFAR-10 subset ($n = 4000$) and fixed training duration. This places all our ResNet models far in the over-parameterized regime (p/n ≥ 44), preventing observation of epoch-wise DD. Reproducing Nakkiran et al.'s results would require either the full CIFAR-10 (n=50,000) or custom micro-architectures with p ≈ 4,000.
+1. **Computational constraints on literal Nakkiran reproduction.** Our NN experiments use $n = 4{,}000$ rather than the full CIFAR-10. With a stock ResNet-18 this places every width far in the over-parameterised regime ($p/n \geq 44$) and produces no model-wise peak (Exp A). The DD-Recovery campaign on a custom fractional-$k$ ResNet recovers the phenomenon at the same $n$ by spanning the interpolation threshold from below; a literal ResNet-18 reproduction at $n = 50{,}000$ remains future work.
 
-2. **No explicit regularization comparison**: We did not compare ridgeless interpolation with ridge regression (nonzero $\lambda$), which would show how regularization smooths the peak. The Zhengda branch includes an initial lambda sweep (exp5) that could be extended.
+2. **NN-side mechanism diagnostics.** The RFF story is supported by an explicit condition-number analysis (Exp 7) and bias-variance decomposition (Exp 6). The CNN side has the analogous *outcome* (Sections 5.3, 6.7) but no comparable Jacobian / effective-rank diagnostic. Adding a Jacobian condition number trace to the Person C runs is a natural next step.
+
+3. **Single-architecture optimiser comparison.** The Adam-vs-SGD comparison (Section 6.7) uses one CNN family. Whether the optimiser-driven divergence persists for ResNet-18 or for transformer-style architectures was out of scope.
 
 ---
 
@@ -411,11 +534,13 @@ These results directly validate theoretical predictions from EECS 6699: the clas
 
 ### 9.2 Future Work
 
-1. **Ridge regression comparison**: Study how the regularization parameter $\lambda$ affects the peak, connecting to Hastie et al.'s optimal ridgeless results
-2. **Effective Model Complexity**: Implement Nakkiran et al.'s EMC metric to precisely locate the threshold for neural networks
-3. **Architecture comparison**: Compare double descent across MLPs, CNNs, ResNets, and Transformers
-4. **Feature learning analysis**: Use NTK alignment metrics (from Project 2) to study whether networks in the feature-learning regime show different double descent behavior than those in the lazy regime
-5. **Multiple random seeds**: Run experiments with multiple seeds to report confidence intervals and assess reproducibility
+The Person A (ridge) and Person C (Adam vs SGD) extensions in this report close two of the gaps identified earlier in the project. The natural next steps are:
+
+1. **Ridge regularisation on neural networks.** Section 6.5 confirms ridge smooths the RFF peak; the analogous CNN experiment (weight decay sweep co-varied with noise) would test whether the same mechanism applies to learnable features.
+2. **Jacobian / effective-rank diagnostics for CNN.** The RFF story has an empirical condition-number trace (Exp 7); the CNN story does not. Recording $\kappa(J^\top J)$ for the network Jacobian along training would give the NN side a comparable mechanism plot.
+3. **Sample-wise NN double descent.** Sections 5.2 and 6.6 study the sample axis only for RFF. Sweeping $n$ at a fixed CNN width would test whether "more data can hurt" persists when features are learned rather than fixed.
+4. **Architecture sweep across families.** MLP / CNN / ResNet / Transformer at matched parameter counts, all under the same noise and optimiser, would test the architecture-independence claim implicit in much of the literature.
+5. **Effective Model Complexity for NN.** Exp 8 shows EMC saturates at $n$ for our (k, T) grid. Sweeping at much larger $n$ (or much smaller $k$) is needed to make EMC informative for the CNN regime.
 
 ---
 

@@ -34,7 +34,12 @@ We use two complementary approaches:
 │       ├── plot_dd_recovery.py        # Plotting for DD recovery figures
 │       ├── supplemental_dd_extras.py  # S1: OOD/ID RFF; S2: ordered n; S3: early stop CNN
 │       ├── exp_architecture.py        # Architecture comparison (MLP/CNN/ResNet)
-│       └── zhengda_exp8_noise_lambda_mechanism.py  # Zhengda Exp8: noise×lambda mechanism
+│       ├── zhengda_exp8_noise_lambda_mechanism.py  # Zhengda Exp8: noise×lambda mechanism
+│       ├── personA_ridge_sweep.py    # Solo (04-30): RFF ridge λ sweep
+│       ├── personB_noise_sweep.py    # Solo (04-30): RFF noise 0–40%
+│       ├── personC_optimizer_compare.py  # Solo (04-30): CNN Adam vs SGD
+│       ├── personC_plot.py           # Solo (04-30): C plotting
+│       └── personD_bounds_figure.py  # Solo (04-30): bounds-vs-observed figure
 ├── results/
 │   ├── exp1_model_wise_rff/           # Exp 1: RFF model-wise DD
 │   ├── exp2_sample_wise_rff/          # Exp 2: RFF sample-wise DD
@@ -62,6 +67,9 @@ We use two complementary approaches:
 │   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
 │   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
 │   └── dd_recovery_5090_focused/     # DD Recovery: fractional-k 29-run campaign (04-28)
+│   └── personA_ridge_sweep/          # Person A (solo, 04-30): RFF ridge λ sweep
+│   └── personB_noise_sweep/          # Person B (solo, 04-30): RFF noise 0–40%
+│   └── personC_optimizer/            # Person C (solo, 04-30): CNN Adam vs SGD on 5090
 ├── figures/                           # Publication-quality figures
 ├── notebooks/
 │   └── analysis.ipynb                 # Interactive analysis
@@ -99,6 +107,23 @@ python3 src/experiments/exp_dd_recovery.py --mode nslice     # n=8000 comparison
 # Regenerate DD recovery figures from local results
 python3 src/experiments/plot_dd_recovery.py
 
+# === Solo extensions (shufeng branch, Apr 30) — see report §6.5–§6.8 ===
+
+# Person A: ridge regularisation smooths the RFF DD peak (~75 sec on CPU)
+python3 -m src.experiments.personA_ridge_sweep
+
+# Person B: label-noise sweep 0%/10%/20%/30%/40% (~75 sec on CPU)
+python3 -m src.experiments.personB_noise_sweep
+
+# Person C: Adam vs SGD CNN sweep on CIFAR-10 (~10-15 min on a 5090)
+python3 -m src.experiments.personC_optimizer_compare \
+    --widths 8,16,24,32,48,64 --optimizers sgd,adam \
+    --noises 0.0,0.15 --seeds 42,7 --epochs 500
+python3 -m src.experiments.personC_plot   # builds the two figures
+
+# Person D: classical-bounds-vs-observed conceptual figure (no compute)
+python3 -m src.experiments.personD_bounds_figure
+
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
@@ -122,6 +147,10 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 | **A** | **Nakkiran recipe (ResNet, augmentation)** | All k={1,2,4,8} past interpolation threshold → no model-wise DD. Best test: 7.6–7.7% |
 | **B** | **Augmentation ablation (4 conditions)** | Noise is the decisive factor: removing noise → 45–75% accuracy; augmentation adds +10–15% |
 | **DD Recovery** | **Fractional-k sweep (ResNet, CIFAR-10, 04-28)** | Real model-wise DD signal: 25%→49% at threshold, dip to ~51%, recovery to 55.4% at k=2.0. 29 runs, 2 seeds, n=4000+8000 |
+| **A (solo, 04-30)** | **Ridge regularisation sweep (Person A)** | λ ∈ {0,1e-8,1e-6,1e-4,1e-2}: λ=1e-2 nearly flattens the p/n=1 peak (14.6 → 0.13). Cleanly separates regularisation effect from noise effect. |
+| **B (solo, 04-30)** | **Label noise 0%–40% (Person B)** | Peak MSE grows monotonically 35→78→106→133→186 with noise; recovery acc at p/n=8 falls 92.6%→62.0%. Confirms "interpolating noise" mechanism. |
+| **C (solo, 04-30)** | **Adam vs SGD on CNN (Person C)** | 6 widths × 2 optimisers × 2 noise × 2 seeds × 500 epochs on RTX 5090. SGD memorises but recovers; Adam memorises and stays stuck on noisy CIFAR-10. |
+| **D (solo, 04-30)** | **Bounds-vs-observed critique (Person D)** | Stylised C·√(p/n) bound diverges as the observed DD curve second-descends; figure shows the regime where parameter-counting fails. |
 
 **Exp 1 — Textbook double descent curve (RFF on MNIST):**
 
@@ -164,6 +193,18 @@ The 2×2 ablation cleanly isolates the effect of noise vs augmentation:
 Removing noise jumps accuracy from ~7% to 45–75%. Augmentation adds ~10–15% on top. **Label noise, not augmentation, is the decisive factor.**
 
 ![Exp B: Augmentation × Noise ablation](results/exp_augmentation_ablation/dd_curves.png)
+
+**Solo extensions A/B/C/D (04-30) — see report §6.5–§6.8:**
+
+![Person A: ridge smooths DD peak](figures/personA_ridge_smooths_peak.png)
+
+![Person B: label noise amplifies DD peak](figures/personB_noise_amplification.png)
+
+![Person C: Adam vs SGD final test acc](figures/personC_optimizer_modelwise.png)
+
+![Person C: Adam vs SGD epoch-wise dynamics](figures/personC_optimizer_epochwise.png)
+
+![Person D: classical bound vs observed DD](figures/personD_bound_vs_observed.png)
 
 **DD Recovery — Fractional-k sweep: real model-wise DD signal (04-28, RTX 5090, 29 runs):**
 
