@@ -1,0 +1,52 @@
+[
+  {
+    "noise_rate": 0.0,
+    "peak_mse": 35.20935504827454,
+    "peak_location_p_over_n": 1.0,
+    "peak_to_valley_ratio": 1592.974962747652,
+    "valley_mse": 0.022102892934075677,
+    "valley_location_p_over_n": 8.0,
+    "test_acc_at_pn8": 92.64333333333333,
+    "test_mse_at_pn8": 0.022102892934075677
+  },
+  {
+    "noise_rate": 0.1,
+    "peak_mse": 78.46289066989921,
+    "peak_location_p_over_n": 1.0,
+    "peak_to_valley_ratio": 2462.1355932469082,
+    "valley_mse": 0.03186781868760823,
+    "valley_location_p_over_n": 8.0,
+    "test_acc_at_pn8": 88.50999999999999,
+    "test_mse_at_pn8": 0.03186781868760823
+  },
+  {
+    "noise_rate": 0.2,
+    "peak_mse": 106.3351248926193,
+    "peak_location_p_over_n": 1.0,
+    "peak_to_valley_ratio": 2470.6344209823083,
+    "valley_mse": 0.04303960310337664,
+    "valley_location_p_over_n": 8.0,
+    "test_acc_at_pn8": 81.53666666666665,
+    "test_mse_at_pn8": 0.04303960310337664
+  },
+  {
+    "noise_rate": 0.3,
+    "peak_mse": 133.35211809044128,
+    "peak_location_p_over_n": 1.0,
+    "peak_to_valley_ratio": 2419.3105296955982,
+    "valley_mse": 0.05511988496458942,
+    "valley_location_p_over_n": 8.0,
+    "test_acc_at_pn8": 72.03999999999999,
+    "test_mse_at_pn8": 0.05511988496458942
+  },
+  {
+    "noise_rate": 0.4,
+    "peak_mse": 186.20593018396934,
+    "peak_location_p_over_n": 1.0,
+    "peak_to_valley_ratio": 2774.8233167850294,
+    "valley_mse": 0.06710550868504002,
+    "valley_location_p_over_n": 8.0,
+    "test_acc_at_pn8": 62.01333333333334,
+    "test_mse_at_pn8": 0.06710550868504002
+  }
+]
