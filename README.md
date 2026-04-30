@@ -39,7 +39,9 @@ We use two complementary approaches:
 │       ├── personB_noise_sweep.py    # Solo (04-30): RFF noise 0–40%
 │       ├── personC_optimizer_compare.py  # Solo (04-30): CNN Adam vs SGD
 │       ├── personC_plot.py           # Solo (04-30): C plotting
-│       └── personD_bounds_figure.py  # Solo (04-30): bounds-vs-observed figure
+│       ├── personD_bounds_figure.py  # Solo (04-30): bounds-vs-observed figure
+│       ├── exp_samplewise_nn.py      # §6.9 (05-01): sample-wise NN DD, n×k sweep
+│       └── exp_samplewise_nn_plot.py # §6.9 (05-01): plots 4-curve figure
 ├── results/
 │   ├── exp1_model_wise_rff/           # Exp 1: RFF model-wise DD
 │   ├── exp2_sample_wise_rff/          # Exp 2: RFF sample-wise DD
@@ -50,6 +52,7 @@ We use two complementary approaches:
 │   ├── expC_epoch_sgd_resnet/         # Exp 7: ResNet SGD vs Adam epoch-wise
 │   ├── expA_emc/                      # Exp 8: Effective Model Complexity
 │   ├── exp_architecture/              # Architecture comparison (negative finding)
+│   ├── samplewise_nn/                 # §6.9 (05-01): 20-run n×k sweep (n=1k,2k)
 │   ├── zhengda_exp5_lambda/           # Zhengda: Ridge λ sweep
 │   ├── zhengda_exp6_noise/            # Zhengda: Noise comparison
 │   ├── zhengda_exp7_optimizer/        # Zhengda: Optimizer comparison
@@ -123,6 +126,11 @@ python3 -m src.experiments.personC_plot   # builds the two figures
 
 # Person D: classical-bounds-vs-observed conceptual figure (no compute)
 python3 -m src.experiments.personD_bounds_figure
+
+# §6.9 Sample-wise NN DD: n×k sweep on fractional-k ResNet (~2h on 5090)
+python3 -m src.experiments.exp_samplewise_nn \
+    --ns 1000,2000 --ks 0.0625,0.125,0.25,0.5,1.0 --seeds 42,7 --epochs 1500
+python3 -m src.experiments.exp_samplewise_nn_plot  # pools with main/nslice for 4-curve figure
 
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
