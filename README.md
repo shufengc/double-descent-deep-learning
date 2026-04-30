@@ -30,6 +30,8 @@ We use two complementary approaches:
 │       ├── comprehensive_dd.py        # Original experiment suite (Exp 1–4)
 │       ├── shufeng_experiments.py     # Extended experiments (Exp 5–8, A–C)
 │       ├── exp_nakkiran_recipe.py     # Exp A: Nakkiran recipe; Exp B: augmentation ablation
+│       ├── exp_dd_recovery.py         # DD Recovery: fractional-k sweep (Cline, 04-28)
+│       ├── plot_dd_recovery.py        # Plotting for DD recovery figures
 │       ├── supplemental_dd_extras.py  # S1: OOD/ID RFF; S2: ordered n; S3: early stop CNN
 │       ├── exp_architecture.py        # Architecture comparison (MLP/CNN/ResNet)
 │       └── zhengda_exp8_noise_lambda_mechanism.py  # Zhengda Exp8: noise×lambda mechanism
@@ -59,6 +61,7 @@ We use two complementary approaches:
 │   ├── yusheng_exp5_architecture_clean_yz_recipe/ # Yusheng: clean-label arch sweep (76.1% acc)
 │   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
 │   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
+│   └── dd_recovery_5090_focused/     # DD Recovery: fractional-k 29-run campaign (04-28)
 ├── figures/                           # Publication-quality figures
 ├── notebooks/
 │   └── analysis.ipynb                 # Interactive analysis
@@ -87,6 +90,15 @@ python3 -m src.experiments.exp_nakkiran_recipe --exp A       # Nakkiran recipe, 
 python3 -m src.experiments.exp_nakkiran_recipe --exp B       # augmentation ablation
 python3 -m src.experiments.exp_nakkiran_recipe --exp all     # both A+B
 
+# Run DD Recovery fractional-k sweep (requires GPU, ~10 hours)
+python3 src/experiments/exp_dd_recovery.py --mode smoke      # sanity check
+python3 src/experiments/exp_dd_recovery.py --mode probe      # 400-epoch probe
+python3 src/experiments/exp_dd_recovery.py --mode main       # full 2000-epoch sweep (2 seeds)
+python3 src/experiments/exp_dd_recovery.py --mode nslice     # n=8000 comparison
+
+# Regenerate DD recovery figures from local results
+python3 src/experiments/plot_dd_recovery.py
+
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
@@ -109,6 +121,7 @@ python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
 | Arch | Architecture comparison (MLP/CNN/ResNet) | Negative finding: all architectures collapse to random chance under Adam + noise + no regularization |
 | **A** | **Nakkiran recipe (ResNet, augmentation)** | All k={1,2,4,8} past interpolation threshold → no model-wise DD. Best test: 7.6–7.7% |
 | **B** | **Augmentation ablation (4 conditions)** | Noise is the decisive factor: removing noise → 45–75% accuracy; augmentation adds +10–15% |
+| **DD Recovery** | **Fractional-k sweep (ResNet, CIFAR-10, 04-28)** | Real model-wise DD signal: 25%→49% at threshold, dip to ~51%, recovery to 55.4% at k=2.0. 29 runs, 2 seeds, n=4000+8000 |
 
 **Exp 1 — Textbook double descent curve (RFF on MNIST):**
 
@@ -151,6 +164,32 @@ The 2×2 ablation cleanly isolates the effect of noise vs augmentation:
 Removing noise jumps accuracy from ~7% to 45–75%. Augmentation adds ~10–15% on top. **Label noise, not augmentation, is the decisive factor.**
 
 ![Exp B: Augmentation × Noise ablation](results/exp_augmentation_ablation/dd_curves.png)
+
+**DD Recovery — Fractional-k sweep: real model-wise DD signal (04-28, RTX 5090, 29 runs):**
+
+After Exp A showed all integer k values were past the interpolation threshold, the recovery used fractional k ∈ {0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1.0, 2.0} to sweep from under- to over-parameterized. All results use n=4,000, 15% label noise, 2,000 epochs.
+
+| k | Params | Train% | Best Test% (2-seed avg) |
+|---|--------|--------|-------------------------|
+| 0.0625 | 823 | 23.8% | 24.9% ← underfitting |
+| 0.125 | 2,988 | 33.1% | 34.1% |
+| **0.1875** | **6,505** | **49.5%** | **49.0%** ← interpolation threshold |
+| 0.25 | 11,374 | 56.1% | 50.4% ← memorization begins |
+| 0.375 | 25,168 | 68.7% | 51.4% |
+| 0.5 | 44,370 | 84.6% | 52.7% |
+| 0.75 | 98,998 | 98.7% | 52.8% |
+| 1.0 | 175,258 | 99.5% | 52.8% |
+| **2.0** | **696,618** | **99.9%** | **55.4%** ← second descent |
+
+![DD Recovery: model-wise DD curve (2-seed)](results/dd_recovery_5090_focused/figures/dd_curve_main.png)
+
+**N-slice: larger n shifts the interpolation threshold right (Nakkiran Theorem 1 confirmed):**
+
+![DD Recovery: n-slice comparison](results/dd_recovery_5090_focused/figures/dd_curve_nslice.png)
+
+**Mechanism panel: training dynamics + memorization fraction vs. capacity:**
+
+![DD Recovery: mechanism panel](results/dd_recovery_5090_focused/figures/dd_mechanism_panel.png)
 
 ### Teammate Contributions
 
@@ -213,6 +252,7 @@ Removing noise jumps accuracy from ~7% to 45–75%. Augmentation adds ~10–15% 
 | Generalization (L9) | Exp 5 (multi-seed) | Peak variance is heavy-tailed; Rademacher bounds miss the second descent |
 | Regularization (L10) | λ sweep (Zhengda) + σ sensitivity (Yusheng) | Ridge regularization → Hastie et al. theorem: "cut the peak, keep the valley" |
 | Generalization (L9) | Exp A (Nakkiran recipe) | Interpolation threshold calibration: model-wise DD requires architecture to straddle p/n=1 |
+| Over-parameterization (L5–L6) | **DD Recovery (fractional-k sweep)** | Fractional k ∈ {0.0625–2.0} spans full interpolation transition; second descent confirmed at k=2.0 (55.4%) |
 | Distribution Shift | OOD vs ID (Yizheng) | Distribution shift amplifies DD peak by 1.4×; OOD generalization compounds variance |
 | Optimization (L4) | Early stopping (Yizheng) | Training duration as implicit regularizer: stopping before full memorization rescues 38–58% acc |
 | Ridge/Bias-Variance | Noise×λ mechanism (Zhengda Exp8) | Ridge shifts eigenspectrum → lowers condition number → reduces effective DoF → shrinks peak |

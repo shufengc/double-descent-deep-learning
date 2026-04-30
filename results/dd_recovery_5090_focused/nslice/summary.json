@@ -1,0 +1,42 @@
+[
+  {
+    "k": 0.125,
+    "n": 8000,
+    "seed": 42,
+    "params": 2988,
+    "best_test_acc": 39.73,
+    "final_test_acc": 39.73,
+    "final_train_acc": 35.525,
+    "effective_rank": 34.04359080605839
+  },
+  {
+    "k": 0.25,
+    "n": 8000,
+    "seed": 42,
+    "params": 11374,
+    "best_test_acc": 57.5,
+    "final_test_acc": 57.5,
+    "final_train_acc": 57.675,
+    "effective_rank": 17.05198288709932
+  },
+  {
+    "k": 0.5,
+    "n": 8000,
+    "seed": 42,
+    "params": 44370,
+    "best_test_acc": 60.43,
+    "final_test_acc": 56.94,
+    "final_train_acc": 77.7125,
+    "effective_rank": 31.95373226673791
+  },
+  {
+    "k": 1.0,
+    "n": 8000,
+    "seed": 42,
+    "params": 175258,
+    "best_test_acc": 59.71,
+    "final_test_acc": 55.27,
+    "final_train_acc": 98.725,
+    "effective_rank": 26.94280443044898
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "k": 0.0625,
+    "n": 4000,
+    "seed": 42,
+    "params": 823,
+    "best_test_acc": 17.72,
+    "final_test_acc": 17.72,
+    "final_train_acc": 16.8,
+    "effective_rank": 24.580988456106866
+  },
+  {
+    "k": 0.125,
+    "n": 4000,
+    "seed": 42,
+    "params": 2988,
+    "best_test_acc": 26.31,
+    "final_test_acc": 26.31,
+    "final_train_acc": 24.55,
+    "effective_rank": 9.613210850741138
+  },
+  {
+    "k": 0.25,
+    "n": 4000,
+    "seed": 42,
+    "params": 11374,
+    "best_test_acc": 44.76,
+    "final_test_acc": 44.76,
+    "final_train_acc": 42.65,
+    "effective_rank": 6.520202164569817
+  },
+  {
+    "k": 0.5,
+    "n": 4000,
+    "seed": 42,
+    "params": 44370,
+    "best_test_acc": 53.46,
+    "final_test_acc": 53.46,
+    "final_train_acc": 63.5,
+    "effective_rank": 11.069917624302557
+  },
+  {
+    "k": 1.0,
+    "n": 4000,
+    "seed": 42,
+    "params": 175258,
+    "best_test_acc": 53.47,
+    "final_test_acc": 47.79,
+    "final_train_acc": 89.675,
+    "effective_rank": 18.435877813806826
+  },
+  {
+    "k": 2.0,
+    "n": 4000,
+    "seed": 42,
+    "params": 696618,
+    "best_test_acc": 54.62,
+    "final_test_acc": 51.6,
+    "final_train_acc": 99.125,
+    "effective_rank": 18.35452306878682
+  }
+]

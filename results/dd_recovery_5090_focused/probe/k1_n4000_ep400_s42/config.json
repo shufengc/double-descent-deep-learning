@@ -1,0 +1,10 @@
+{
+  "k": 1.0,
+  "n_train": 4000,
+  "noise_rate": 0.15,
+  "epochs": 400,
+  "seed": 42,
+  "augment": true,
+  "batch_size": 256,
+  "lr": 0.0001
+}
