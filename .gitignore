@@ -30,3 +30,10 @@ Thumbs.db
 .venv/
 venv/
 env/
+
+# Raw per-run outputs — keep summary.json tracked, ignore the heavy per-run
+# results.json files (each ~10 MB; summary.json carries aggregated metrics)
+results/samplewise_nn/k*_n*_ep*_s*/
+results/nn_spectral/k*_n*_ep*_s*/
+logs/
+logs_*.txt
