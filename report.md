@@ -501,6 +501,34 @@ Three observations are consistent with sample-wise double descent theory:
 
 **Comparison to RFF sample-wise DD (Exp 2).** In Exp 2 (Section 5.2), varying $n$ in the RFF setting clearly shifts the $p/n = 1$ peak while holding the curve shape fixed. In the NN setting, the same directional shift is present but less sharp, because (a) the effective interpolation threshold depends on feature learning dynamics rather than raw parameter count, and (b) Adam's implicit regularisation smooths the peak. This difference is itself informative: it suggests that the NN interpolation threshold is better measured by EMC (Nakkiran et al., 2021) than by raw $p/n$.
 
+### 6.11 Fractional-$k$ epoch-wise dynamics and early stopping
+
+**Motivation.** DD-Recovery (Section 5.3) establishes a clean model-wise DD signal on the NN side. The remaining question is dynamic: does training longer always help for the same fractional-$k$ model, or does late-stage training hurt generalization in specific complexity regimes?
+
+**Setup.** We run a fixed epoch-wise protocol on the same CIFAR-10/noise configuration as DD-Recovery: $n=4{,}000$, label noise $15\%$, Adam ($\mathrm{lr}=10^{-4}$), 2,000 epochs, seeds $\{42,7\}$, and $k\in\{0.125, 0.1875, 0.5\}$. For each run, we compare:
+1) **best checkpoint** (early-stop proxy) and  
+2) **final checkpoint** (epoch 2000).
+
+![Figure 16: Fractional-$k$ epoch-wise dynamics and early-stop gap](figures/fractionalk_epochwise.png)
+
+**Results.**
+
+| $k$ | Params | Seed | Best epoch | Best test acc | Final test acc | Gap (best-final) |
+|---|---:|---:|---:|---:|---:|---:|
+| 0.125 | 2,988 | 42 | 2000 | 35.35% | 35.35% | 0.00 |
+| 0.125 | 2,988 | 7  | 2000 | 32.89% | 32.89% | 0.00 |
+| 0.1875 | 6,505 | 42 | 1800 | 48.76% | 48.75% | 0.01 |
+| 0.1875 | 6,505 | 7  | 1800 | 49.17% | 48.89% | 0.28 |
+| 0.5 | 44,370 | 42 | 400 | 54.14% | 48.13% | 6.01 |
+| 0.5 | 44,370 | 7  | 400 | 51.18% | 47.09% | 4.09 |
+
+Three consistent patterns emerge:
+1. **Near-threshold stability at $k\approx0.1875$.** The best-final gap is tiny (0.01–0.28 pp), indicating weak late-stage degradation around the interpolation peak.
+2. **Strong late-stage degradation in over-parameterized regime ($k=0.5$).** The gap is large (4.09–6.01 pp), and the best checkpoint appears much earlier (epoch 400), showing prolonged training hurts test performance after an early optimum.
+3. **Under-capacity side ($k=0.125$) remains monotone.** Best and final coincide at epoch 2000, suggesting this regime is still optimization-limited rather than overfitting-limited.
+
+**Conclusion for the main storyline.** Early stopping mainly reduces late-stage overfitting in the over-parameterized region; it does **not** move the recovered model-wise DD peak location. This supports the DD-Recovery claim that interpolation-threshold geometry (capacity/EMC axis) is primary, while optimizer-time dynamics are a secondary correction.
+
 ## 7. Discussion
 
 ### 7.1 Key Findings
