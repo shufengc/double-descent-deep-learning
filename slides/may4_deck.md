@@ -19,7 +19,7 @@ style: |
 
 **Fractional-$k$ ResNet recovers Nakkiran model-wise DD where literal ResNet18 cannot**
 
-Shufeng Chen · Yusheng Cao · Zhengda Lyu · Yizheng Liu
+Zhengda Li (zl3651) · Yusheng Li (yl6009) · Yizheng Lin (yl6079) · Shufeng Chen (sc5739)
 EECS 6699 · Mathematics of Deep Learning · Spring 2026
 
 <span class="small">Companion paper: `report.md` · code: `github.com/shufengc/double-descent-deep-learning`</span>
