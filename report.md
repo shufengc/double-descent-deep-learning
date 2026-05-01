@@ -505,29 +505,31 @@ Three observations are consistent with sample-wise double descent theory:
 
 **Motivation.** DD-Recovery (Section 5.3) establishes a clean model-wise DD signal on the NN side. The remaining question is dynamic: does training longer always help for the same fractional-$k$ model, or does late-stage training hurt generalization in specific complexity regimes?
 
-**Setup.** We run a fixed epoch-wise protocol on the same CIFAR-10/noise configuration as DD-Recovery: $n=4{,}000$, label noise $15\%$, Adam ($\mathrm{lr}=10^{-4}$), 2,000 epochs, seeds $\{42,7\}$, and $k\in\{0.125, 0.1875, 0.5\}$. For each run, we compare:
-1) **best checkpoint** (early-stop proxy) and  
-2) **final checkpoint** (epoch 2000).
+**Setup.** We run a fixed epoch-wise protocol on the same CIFAR-10/noise configuration as DD-Recovery: $n=4{,}000$, label noise $15\%$, Adam ($\mathrm{lr}=10^{-4}$), 2,000 epochs, seeds $\{42,7\}$, and $k\in\{0.125, 0.1875, 0.5\}$. We hold out $10\%$ of the training subset as a validation set (stratified by the same random split for each seed). Every $25$ epochs we evaluate **validation accuracy** and record the **test accuracy** at the same checkpoints. We define:
+1) **best checkpoint** — the epoch with highest validation accuracy (early-stop selection rule), and  
+2) **final checkpoint** — epoch 2000.
+
+We report $\Delta = \text{best test acc} - \text{final test acc}$. A **positive** $\Delta$ means stopping at the validation-optimal epoch would have improved test accuracy relative to training to completion; a **negative** $\Delta$ means test accuracy continued to improve after the validation-optimal epoch (validation/test mismatch).
 
 ![Figure 16: Fractional-$k$ epoch-wise dynamics and early-stop gap](figures/fractionalk_epochwise.png)
 
 **Results.**
 
-| $k$ | Params | Seed | Best epoch | Best test acc | Final test acc | Gap (best-final) |
+| $k$ | Params | Seed | Best epoch (by val) | Best test acc | Final test acc | $\Delta$ (best-final) |
 |---|---:|---:|---:|---:|---:|---:|
-| 0.125 | 2,988 | 42 | 2000 | 35.35% | 35.35% | 0.00 |
-| 0.125 | 2,988 | 7  | 2000 | 32.89% | 32.89% | 0.00 |
-| 0.1875 | 6,505 | 42 | 1800 | 48.76% | 48.75% | 0.01 |
-| 0.1875 | 6,505 | 7  | 1800 | 49.17% | 48.89% | 0.28 |
-| 0.5 | 44,370 | 42 | 400 | 54.14% | 48.13% | 6.01 |
-| 0.5 | 44,370 | 7  | 400 | 51.18% | 47.09% | 4.09 |
+| 0.125 | 2,988 | 42 | 1975 | 32.33% | 32.69% | $-0.36$ |
+| 0.125 | 2,988 | 7  | 1600 | 30.77% | 32.53% | $-1.76$ |
+| 0.1875 | 6,505 | 42 | 1225 | 46.31% | 47.65% | $-1.34$ |
+| 0.1875 | 6,505 | 7  | 1750 | 48.34% | 47.96% | $+0.38$ |
+| 0.5 | 44,370 | 42 | 750 | 51.48% | 47.33% | $+4.15$ |
+| 0.5 | 44,370 | 7  | 800 | 50.32% | 47.01% | $+3.31$ |
 
 Three consistent patterns emerge:
-1. **Near-threshold stability at $k\approx0.1875$.** The best-final gap is tiny (0.01–0.28 pp), indicating weak late-stage degradation around the interpolation peak.
-2. **Strong late-stage degradation in over-parameterized regime ($k=0.5$).** The gap is large (4.09–6.01 pp), and the best checkpoint appears much earlier (epoch 400), showing prolonged training hurts test performance after an early optimum.
-3. **Under-capacity side ($k=0.125$) remains monotone.** Best and final coincide at epoch 2000, suggesting this regime is still optimization-limited rather than overfitting-limited.
+1. **Strong late-stage degradation in the over-parameterized regime ($k=0.5$).** $\Delta$ is large and positive (3.31–4.15 pp), and the validation-optimal checkpoint occurs early (epochs 750–800), indicating that prolonged training hurts test accuracy after an early optimum — the classic signature of late-stage overfitting under label noise.
+2. **Near-threshold regime ($k\approx0.1875$) is mixed.** One seed shows a small positive $\Delta$ (+0.38 pp), while the other shows continued test improvement after the val-optimal point ($\Delta=-1.34$ pp). This is consistent with **validation–test mismatch** near the interpolation transition: the val-selected “best” epoch need not coincide with the best test epoch.
+3. **Under-capacity side ($k=0.125$) shows negative $\Delta$.** Test accuracy is *higher* at epoch 2000 than at the val-optimal checkpoint, suggesting the model is still slowly improving on test late in training (or that the val split is noisy at small capacity).
 
-**Conclusion for the main storyline.** Early stopping mainly reduces late-stage overfitting in the over-parameterized region; it does **not** move the recovered model-wise DD peak location. This supports the DD-Recovery claim that interpolation-threshold geometry (capacity/EMC axis) is primary, while optimizer-time dynamics are a secondary correction.
+**Conclusion for the main storyline.** These dynamics do **not** “erase” the DD-Recovery model-wise peak: they describe **training-time** behavior at fixed $k$. The clearest early-stop benefit appears in the over-parameterized tail ($k=0.5$), where late training is most harmful. Near the threshold, early stopping is not uniformly beneficial — consistent with the idea that the interpolation structure is primarily a **capacity / EMC** phenomenon, while epoch-wise effects are a **secondary**, seed-dependent correction.
 
 ## 7. Discussion
 
