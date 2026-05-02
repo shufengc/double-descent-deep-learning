@@ -1,0 +1,16 @@
+{
+  "k": 0.125,
+  "seed": 42,
+  "n_train": 1000,
+  "epochs": 200,
+  "noise_rate": 0.15,
+  "augment": true,
+  "lr": 0.0001,
+  "params": 2988,
+  "widths": [
+    2,
+    4,
+    8
+  ],
+  "norm_kind": "gn"
+}
