@@ -295,9 +295,23 @@ We train CNNs of varying widths on a CIFAR-10 subset with $n = 4000$ samples. Th
 
 ![Figure 4b: ResNet18 vs fractional-$k$ controlled comparison](figures/resnet18_vs_fractionalk.png)
 
-**Result.** \[TBD: table to be filled when the controlled sweep completes; deferred to paper week due to compute constraints. Preliminary observation: all three ResNet18 width multipliers sit at $p/n \in [700, 11{,}200]$ — well past the interpolation threshold — and the trajectory is expected to be nearly **flat** across the three multipliers (no DD peak, no recovery transition). The fractional-$k$ ResNet (same hyperparameters, continuous width axis $k=0.0625$ to $k=2$) traverses 24.9% → 49.0% → 55.4% on the same axis.\]
+**Result.** Best test accuracy across the three width multipliers (n=4000, 15% noise, 800 epochs, 1 seed):
 
-**Diagnosis.** Literal ResNet18 cannot reveal DD at $n=4{,}000$ because its discrete BasicBlock widths cannot continuously span the threshold. The fractional-$k$ family is a deliberate architectural choice that turns width into a smooth axis through the threshold. This is the controlled comparison that the headline claim depends on.
+| Width multiplier | Stage widths | Params | Best test acc | Final train acc |
+|---|---|---:|---:|---:|
+| 0.5 | (32, 64, 128, 256) | 2{,}797{,}610 | 54.08% | 100.00% |
+| 1.0 | (64, 128, 256, 512) | 11{,}173{,}962 | 56.62% | 99.85% |
+| 2.0 | (128, 256, 512, 1024) | 44{,}662{,}922 | **60.94%** | 100.00% |
+
+Three observations:
+
+1. **The trajectory is monotonically increasing in width** — 54.1% → 56.6% → 60.9% — with no DD peak or recovery transition. All three multipliers sit at $p/n \in [699, 11{,}166]$, deep into the over-parameterised tail.
+
+2. **All three perfectly memorize the noisy training set** (final train acc $\approx 100\%$ across the three) — the network has more than enough capacity, and the choice of width simply determines how well the over-parameterised solution interpolates. Test accuracy still improves with width because larger ResNet18 finds smoother interpolating solutions, not because of DD.
+
+3. **ResNet18 × 2 achieves higher absolute test accuracy ($60.94\%$) than the largest fractional-$k$ model ($55.06\%$ at $k=2$)** — but at $\sim 64\times$ the parameter count (44.7M vs 0.7M). The fractional-$k$ family is more parameter-efficient because the 3-stage architecture is matched to the small-data regime; the additional 4th stage of literal ResNet18 grants more capacity but at a steep parameter cost.
+
+**Diagnosis.** Literal ResNet18 cannot reveal the DD recovery trajectory at $n=4{,}000$ because its smallest viable width multiplier (0.5×) already places it at $p/n \approx 700$ — well past the interpolation threshold. The fractional-$k$ family is a deliberate architectural choice that turns width into a smooth axis spanning $p/n \in [0.2, 174]$, traversing the threshold from below. This is the controlled comparison that the headline claim depends on: *fractional-$k$ recovers the DD trajectory; literal ResNet18 misses it because it never starts below the threshold.*
 
 ### 5.4 Experiment 4: Epoch-Wise Double Descent (Neural Networks)
 
