@@ -120,9 +120,9 @@ Every experiment in this report is anchored to one or more EECS 6699 lecture con
 | §6.8 Person D — bounds critique | Norm-/margin-based generalisation bounds vs observed risk | L9–L12 | Direct empirical critique of Bartlett et al. (2017) and Neyshabur et al. (2018) |
 | §6.9 Sample-wise NN DD (fractional-$k$) | Peak shifts with $n$ (sample-wise on NN) | L9–L10 | NN-side analogue of Exp 2; supports EMC framing |
 | §6.10 NN spectral mechanism | Penultimate-feature spectrum, last-layer NTK | L7–L8, L10 | NN-side analogue of Exp 8 (RFF condition number) |
-| §6.11 Fractional-$k$ epoch-wise + early-stop | Validation-test mismatch, optimisation dynamics | L5–L6, L9 | Refines Exp 4 with capacity-dependent early-stop $\Delta$ |
+| §6.11–§6.11.1 Fractional-$k$ epoch-wise, early-stop, train-time spectrum | Validation-test mismatch; penultimate stable rank vs time | L5–L6, L7–L8, L9 | Refines Exp 4; links §6.10 to training dynamics |
 
-The table makes two structural claims explicit. First, every experiment in Sections 5–6 connects to at least one lecture concept — the project does not invent its theoretical framing. Second, the three new sections of this report (§6.9–§6.11) are not isolated extensions but the NN-side analogues of three RFF experiments (Exp 2, Exp 8, Exp 4), each tagged to the same lecture as its RFF counterpart. This 1-to-1 structural symmetry is the spine of the report.
+The table makes two structural claims explicit. First, every experiment in Sections 5–6 connects to at least one lecture concept — the project does not invent its theoretical framing. Second, §6.9–§6.11 develop the NN-side analogues of Exp 2 (sample-wise DD), Exp 8 (spectral mechanism), and Exp 4 (epoch-wise dynamics); §6.11.1 extends this line by tracking the §6.10 penultimate spectrum **during** training. These sections are not isolated add-ons but tied to the same lecture-aligned framing as their RFF counterparts. This 1-to-1 structural symmetry is the spine of the report.
 
 ---
 
@@ -607,6 +607,8 @@ Two structural features appear simultaneously at $k = 0.1875$: features are *mos
 
 3. **Width past the recovery onset trades feature-dimension *coverage* for raw *capacity*.** The over-parameterised tail ($k = 0.5, 1, 2$) has high absolute participation ratio ($\text{PR} \approx 7\text{--}10$) but low *fractional* PR ($\le 0.23$): the network has many available directions but uses a shrinking subset of them. This is consistent with the benign-overfitting picture (Bartlett et al., 2020): generalisation in over-parameterised models depends on *effective* dimension, not raw parameter count, and the effective dimension does not need to keep up with $c_3$ for test accuracy to recover.
 
+**Training-time complement.** Section~6.11.1 evaluates the **same** normalised stable rank **along the optimisation trajectory** (every 100 epochs) at $k \in \{0.125, 0.1875, 0.5\}$ on the §6.11 protocol: the spectrum co-evolves with test accuracy, and at epoch 2000 the cross-$k$ ordering above is recovered on this three-point grid — so §6.10’s width-wise phase transition and §6.11’s epoch-wise dynamics describe compatible slices of one mechanism.
+
 **Honest framing.** We use "DD-recovery onset" rather than "DD peak" to describe $k=0.1875$ in this paper. The headline trajectory at $n=4{,}000$ — best test accuracy $25.7\% \to 32.9\% \to 49.2\% \to 52.3\% \to 50.5\% \to 51.2\% \to 54.2\% \to 52.9\% \to 55.1\%$ across $k \in \{0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1.0, 2.0\}$ — is dominated by an under-fit$\rightarrow$recovery transition in the lower half of the $k$ grid. A genuine bias-variance "valley" appears between $k=0.375$ ($50.5\%$) and $k=0.5$ ($51.2\%$), a roughly $1$-$2$ pp dip relative to the $k=0.25$ ($52.3\%$) and $k=0.75$ ($54.2\%$) neighbours. The U-shape exists but is shallow; the dominant signal is the rapid recovery onset at $k=0.1875$, which is precisely where the spectral diagnostics localise the phase transition. We work in the noise-amplified regime (15% label noise) following Belkin et al. (2019) §3.2; without injected label noise the peak is much shallower or vanishes (Person B, §6.6).
 
 #### 6.10.1 Full empirical-NTK confirmation (Z. Li)
@@ -659,7 +661,7 @@ Three observations:
 
 **Motivation.** DD-Recovery (Section 5.3) establishes a clean model-wise DD signal on the NN side. The remaining question is dynamic: does training longer always help for the same fractional-$k$ model, or does late-stage training hurt generalization in specific complexity regimes?
 
-**Setup.** We run a fixed epoch-wise protocol on the same CIFAR-10/noise configuration as DD-Recovery: $n=4{,}000$, label noise $15\%$, Adam ($\mathrm{lr}=10^{-4}$), 2,000 epochs, seeds $\{42,7\}$, and $k\in\{0.125, 0.1875, 0.5\}$. We hold out $10\%$ of the training subset as a validation set (stratified by the same random split for each seed). Every $25$ epochs we evaluate **validation accuracy** and record the **test accuracy** at the same checkpoints. We define:
+**Setup.** We run a fixed epoch-wise protocol on the same CIFAR-10/noise configuration as DD-Recovery: $n=4{,}000$, label noise $15\%$, Adam ($\mathrm{lr}=10^{-4}$), 2,000 epochs, seeds $\{42,7\}$, and $k\in\{0.125, 0.1875, 0.5\}$. We hold out $10\%$ of the training subset as a validation set (stratified by the same random split for each seed). Every $25$ epochs we evaluate **validation accuracy** and record the **test accuracy** at the same checkpoints. A follow-up script (`src/experiments/exp_epochwise_fractionalk_spectral.py`) runs the **identical** training loop and additionally, every $100$ epochs, collects penultimate features on $N=2{,}048$ CIFAR-10 test images and computes the §6.10 normalised stable rank (and related scalars). The seed-level results table below reports outcomes from that joint campaign so that epoch-wise and spectral readouts are matched. We define:
 1) **best checkpoint** — the epoch with highest validation accuracy (early-stop selection rule), and  
 2) **final checkpoint** — epoch 2000.
 
@@ -667,23 +669,50 @@ We report $\Delta = \text{best test acc} - \text{final test acc}$. A **positive*
 
 ![Figure 16: Fractional-$k$ epoch-wise dynamics and early-stop gap](figures/fractionalk_epochwise.png)
 
+Figure~16 (left: test accuracy vs epoch with validation-best markers; right: seed-averaged best vs final test accuracy) summarises the early-stop geometry for an epoch-only export. The seed-resolved numbers below come from the rerun that also logs train-time spectra (Figure~16b, §6.11.1).
+
 **Results.**
 
 | $k$ | Params | Seed | Best epoch (by val) | Best test acc | Final test acc | $\Delta$ (best-final) |
 |---|---:|---:|---:|---:|---:|---:|
-| 0.125 | 2,988 | 42 | 1975 | 32.33% | 32.69% | $-0.36$ |
-| 0.125 | 2,988 | 7  | 1600 | 30.77% | 32.53% | $-1.76$ |
-| 0.1875 | 6,505 | 42 | 1225 | 46.31% | 47.65% | $-1.34$ |
-| 0.1875 | 6,505 | 7  | 1750 | 48.34% | 47.96% | $+0.38$ |
-| 0.5 | 44,370 | 42 | 750 | 51.48% | 47.33% | $+4.15$ |
-| 0.5 | 44,370 | 7  | 800 | 50.32% | 47.01% | $+3.31$ |
+| 0.125 | 2,988 | 42 | 1825 | 28.60% | 29.74% | $-1.14$ |
+| 0.125 | 2,988 | 7  | 1975 | 32.40% | 32.85% | $-0.45$ |
+| 0.1875 | 6,505 | 42 | 1475 | 46.65% | 47.17% | $-0.52$ |
+| 0.1875 | 6,505 | 7  | 1750 | 47.84% | 48.03% | $-0.19$ |
+| 0.5 | 44,370 | 42 | 1175 | 49.60% | 48.12% | $+1.48$ |
+| 0.5 | 44,370 | 7  | 800 | 50.56% | 47.88% | $+2.68$ |
 
 Three consistent patterns emerge:
-1. **Strong late-stage degradation in the over-parameterized regime ($k=0.5$).** $\Delta$ is large and positive (3.31–4.15 pp), and the validation-optimal checkpoint occurs early (epochs 750–800), indicating that prolonged training hurts test accuracy after an early optimum — the classic signature of late-stage overfitting under label noise.
-2. **Near-threshold regime ($k\approx0.1875$) is mixed.** One seed shows a small positive $\Delta$ (+0.38 pp), while the other shows continued test improvement after the val-optimal point ($\Delta=-1.34$ pp). This is consistent with **validation–test mismatch** near the interpolation transition: the val-selected “best” epoch need not coincide with the best test epoch.
-3. **Under-capacity side ($k=0.125$) shows negative $\Delta$.** Test accuracy is *higher* at epoch 2000 than at the val-optimal checkpoint, suggesting the model is still slowly improving on test late in training (or that the val split is noisy at small capacity).
+1. **Strong late-stage degradation in the over-parameterized regime ($k=0.5$).** $\Delta$ is positive (1.48–2.68 pp), and the validation-optimal checkpoint occurs early (epochs 800–1175): prolonged training hurts test accuracy after an early optimum — the classic signature of late-stage overfitting under label noise.
+2. **Near-threshold regime ($k\approx0.1875$).** Both seeds show **negative** $\Delta$ of order $\sim 0.2$–$0.5$ pp: test accuracy at epoch 2000 slightly exceeds test accuracy at the validation-argmax epoch. Early stopping by validation would not improve test error here; the val-selected checkpoint slightly *lags* the final checkpoint on test.
+3. **Under-capacity side ($k=0.125$) shows negative $\Delta$.** Test accuracy is *higher* at epoch 2000 than at the val-optimal checkpoint on both seeds, consistent with slow continued improvement (or noisy validation at low capacity).
 
-**Conclusion for the main storyline.** These dynamics do **not** “erase” the DD-Recovery model-wise peak: they describe **training-time** behavior at fixed $k$. The clearest early-stop benefit appears in the over-parameterized tail ($k=0.5$), where late training is most harmful. Near the threshold, early stopping is not uniformly beneficial — consistent with the idea that the interpolation structure is primarily a **capacity / EMC** phenomenon, while epoch-wise effects are a **secondary**, seed-dependent correction.
+**Conclusion for the main storyline.** These dynamics do **not** “erase” the DD-Recovery model-wise peak: they describe **training-time** behavior at fixed $k$. The clearest early-stop benefit appears in the over-parameterized tail ($k=0.5$), where late training is most harmful. Near the threshold ($k=0.1875$), validation-based early stopping does not systematically beat training to completion on test — consistent with the idea that the interpolation structure is primarily a **capacity / EMC** phenomenon, while epoch-wise effects are a **secondary**, regime-dependent correction.
+
+#### 6.11.1 Train-time penultimate spectrum: linking epoch-wise dynamics to §6.10
+
+**Motivation.** Section~6.10 fixes $k$ after training and compares **end-of-training** penultimate spectra across widths. Here we ask how the same §6.10 diagnostic evolves **during** optimisation at the three focal widths used in §6.11, holding the DD-Recovery protocol fixed.
+
+**Setup.** Identical to §6.11 (including the $10\%$ validation split). Every $100$ epochs (and at epoch 2000), we form the centred feature matrix $Z_c \in \mathbb{R}^{N \times c_3}$ from $N=2{,}048$ **test** inputs (same convention as §6.10) and record the normalised stable rank $\|Z_c\|_F^2 / (\|Z_c\|_{\mathrm{op}}^2 \cdot c_3)$, matching Figure~17’s vertical-axis convention.
+
+![Figure 16b: Train-time normalised stable rank and test accuracy — fractional-$k$ protocol ($n=4{,}000$, 15\% noise, two seeds per $k$)](figures/fractionalk_epochwise_spectral.png)
+
+**Qualitative trajectories (Figure~16b, left).** For every $(k,\text{seed})$, the normalised stable rank **rises** over training from epoch $100$ to $2000$: mass spreads across singular directions as features adapt. Ordering by $k$ at late times differs from the cross-sectional §6.10 ordering at a **fixed** epoch budget: here $k=0.1875$ ends with the **largest** $\mathrm{eff\_rank}/c_3$ ($\approx 0.232$–$0.239$), while $k=0.5$ ends **lower** ($\approx 0.140$–$0.145$) despite higher test accuracy — the wide model occupies a **larger** raw penultimate space ($c_3=32$) but uses a **smaller fraction** of it, echoing the §6.10 interpretation that past the recovery onset, capacity grows faster than the effective dimension used. The small-$k$ curve ($k=0.125$, $c_3=8$) sits between the two.
+
+**Endpoints (epoch 2000, test features).**
+
+| $k$ | $c_3$ | Seed | Final test acc | $\|Z_c\|_F^2 / (\|Z_c\|_{\mathrm{op}}^2 \cdot c_3)$ |
+|---|---:|---:|---:|---:|
+| 0.125 | 8 | 42 | 29.74% | 0.166 |
+| 0.125 | 8 | 7  | 32.85% | 0.215 |
+| 0.1875 | 12 | 42 | 47.17% | 0.239 |
+| 0.1875 | 12 | 7  | 48.03% | 0.232 |
+| 0.5 | 32 | 42 | 48.12% | 0.140 |
+| 0.5 | 32 | 7  | 47.88% | 0.145 |
+
+These terminal fraction-ranks are the train-time analogue of the §6.10 cross-$k$ table (evaluated at 500 epochs there): the **recovery onset** $k=0.1875$ again sits at a **local maximum** of $\mathrm{eff\_rank}/c_3$ in the neighbourhood of our three-point grid, while $k=0.125$ remains lower and $k=0.5$ shows **concentration** in the spectral sense despite stronger accuracy.
+
+**Takeaway.** The spectral phase transition documented **across** $k$ in §6.10 has a clear **within-training** signature: the penultimate spectrum is not frozen — it co-evolves with test accuracy — and at fixed late epoch the same ordering (threshold width maximises fraction-rank; wide tail compresses in fraction-rank) persists. Together, §6.10 and §6.11.1 separate **width-as-axis** from **time-within-run**: both point to $k \approx 0.1875$ as the regime where features are most evenly spread relative to capacity.
 
 ### 6.12 Depth-axis ablation: DD-recovery is depth-robust
 
