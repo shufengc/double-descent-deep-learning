@@ -35,5 +35,9 @@ env/
 # results.json files (each ~10 MB; summary.json carries aggregated metrics)
 results/samplewise_nn/k*_n*_ep*_s*/
 results/nn_spectral/k*_n*_ep*_s*/
+results/full_empirical_ntk/k*_n*_ep*_s*/
+results/depth_ablation/d*_k*_n*_ep*_s*/
+results/resnet18_compare/rn18m*_n*_ep*_s*/
+results/hessian_topeig/k*_n*_ep*_s*/
 logs/
 logs_*.txt
