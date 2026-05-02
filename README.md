@@ -135,6 +135,9 @@ python3 -m src.experiments.exp_samplewise_nn_plot  # pools with main/nslice for 
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
+
+# Regenerate all paper figures from saved results JSON files
+make figures
 ```
 
 ## Experiments and Key Results
