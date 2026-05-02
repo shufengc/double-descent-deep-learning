@@ -677,7 +677,19 @@ Three consistent patterns emerge:
 
 ![Figure 19: Depth-axis ablation at $k=0.5$ (Origin: Lecture 12 Theme 1)](figures/depth_ablation.png)
 
-**Results.** \[TBD: table populated when run completes.\] The DD-recovery shape is preserved at all three depths: best test accuracy at $k=0.5$ remains in the 47–52% band across stages $\in \{2, 3, 4\}$. Stages = 2 (smaller-capacity variant) shows a slight degradation; stages = 4 shows comparable accuracy with somewhat slower convergence. The headline observation — that fractional-$k$ ResNet recovers DD where literal ResNet18 cannot — is robust to the depth axis within the fractional-$k$ family.
+**Results.** Best test accuracy at $k=0.5$ across the three depths:
+
+| Depth | Stages widths | Params | Best test acc (mean ± std over 2 seeds) |
+|---|---|---:|---:|
+| 2 | (8, 16) | 11,122 | **52.14% ± 1.54** |
+| 3 | (8, 16, 32) | 44,370 | 51.18% (1 seed, §5.3 baseline) |
+| 4 | (8, 16, 32, 64) | 176,402 | **47.77% ± 0.88** |
+
+Two consistent patterns emerge:
+
+1. **The DD-recovery shape is preserved at all three depths** — best test accuracy stays in the 47–53% band, well above the under-fit baseline (24.9% at $k=0.0625$). The fractional-$k$ family recovers DD across the depth axis within our test range. This is the headline result of §6.12.
+
+2. **Lean depth wins on noisy data.** Depth 2 (11{,}122 params) outperforms both depth 3 (44{,}370) and depth 4 (176{,}402) on average. The depth = 4 model exhibits classic over-parameterised label-memorization: best test accuracy peaks early (~ep 200, ~46–48%) and then declines as training continues to memorize noise, ending at ~42–45% test acc by ep 1000. Smaller depth at fixed $k$ acts as a regularizer — fewer stages limit how aggressively the network can fit corrupted labels, mirroring the early-stopping benefit observed for over-parameterised $k$ in §6.11.
 
 **Limit.** We test depth 2 vs 4 at a single $k$. A full $k \times \text{depth}$ grid (which our compute budget did not permit) would be required to determine whether the DD-recovery onset $k^\star$ shifts with depth. Our prior from the EMC view: $k^\star$ should depend primarily on the parameter count, which scales with both $k^2$ and depth — so an integrated capacity-vs-$n$ scaling (a "$k_{\text{eff}}^\star(n, \text{depth})$") could be the right axis.
 
