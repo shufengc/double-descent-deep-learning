@@ -247,13 +247,13 @@ All measured on the trained fractional-$k$ ResNet at end of training (§6.10):
 
 <div>
 
-**Power iteration** on $\nabla^2_\theta \mathcal{L}$ at end of training, $k \in \{0.0625, 0.125, 0.1875, 0.5, 2.0\}$, ~256 random samples, 30 power-iter steps.
+**Power iteration** on $\nabla^2_\theta \mathcal{L}$ at end of training, $k \in \{0.0625, 0.125, 0.1875, 0.5, 2.0\}$, 256 random samples.
 
-**Result.** Top eigenvalue **peaks at $k=0.1875$** — sharpness aligns with the spectral phase transition.
+**Result.** $\lambda_{\max}$ is **non-monotone**: $21 \to 274 \to 2{,}394 \to 9{,}882 \to 554$. Absolute peak at $k=0.5$; per-param peak ($\lambda_{\max}/p$) at $k=0.1875$.
 
-Origin: Yao et al. 2020 (PyHessian); Foret et al. 2021 (SAM).
+The 18× drop from $k=0.5$ to $k=2$ is the SAM "flat minimum" signature for over-parameterized networks (Foret et al. 2021).
 
-Connection to Group 2 (loss-landscape geometry): we directly engage their territory with the same diagnostic on a different setting.
+Origin: Yao et al. 2020 (PyHessian); Foret et al. 2021 (SAM). Engages Group 2's loss-landscape territory.
 
 </div>
 
