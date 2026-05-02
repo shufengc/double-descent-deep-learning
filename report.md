@@ -57,11 +57,13 @@ The double descent phenomenon has roots in classical statistics but was formaliz
 
 Several theoretical frameworks have been proposed to explain double descent:
 
-- **Variance explosion at the threshold**: When $p = n$, the minimum-norm interpolating solution has $\|w\| \to \infty$ because the system matrix is exactly singular. Perturbations in the data (including label noise) get amplified arbitrarily (Belkin et al., 2019; Hastie et al., 2022).
+- **Variance explosion at the threshold**: Near $p = n$, the interpolation matrix becomes poorly conditioned, so the minimum-norm interpolator can have a very large $\|w\|$ and high sensitivity to perturbations. In proportional asymptotics this produces the risk divergence at the interpolation threshold; finite-sample experiments show the same behavior as a sharp test-error peak, especially with label noise (Belkin et al., 2019; Hastie et al., 2022).
 
 - **Implicit regularization by gradient descent**: In the over-parameterized regime ($p \gg n$), gradient descent converges to the minimum $\ell_2$-norm interpolator (Gunasekar et al., 2017; Ji & Telgarsky, 2019). This implicit bias toward smooth solutions explains why more parameters can improve generalization. This was covered in Lectures 5–6.
 
 - **Neural Tangent Kernel (NTK)**: In the infinite-width limit, neural networks are equivalent to kernel machines with the NTK (Jacot et al., 2018). The double descent in kernel methods directly applies to this regime. This was the topic of Lectures 7–8.
+
+- **Norm- and margin-based generalization**: Classical VC/Rademacher bounds based on raw parameter count become vacuous in the over-parameterized regime. A sharper way to frame generalization is through the geometry of the learned interpolator: its norm, margin, and stability to perturbations. Spectrally-normalized margin bounds (Bartlett et al., 2017) and PAC-Bayesian spectral-norm bounds (Neyshabur et al., 2018) formalize this perspective. They do not directly predict the full double descent curve, but they support the key lesson that effective complexity is not the same as the number of parameters.
 
 - **Benign overfitting**: Bartlett et al. (2020) showed conditions under which interpolating models can still generalize well — when the "signal" components of the data dominate the "noise" components in the minimum-norm solution.
 
@@ -71,7 +73,7 @@ Classical statistical learning theory predicts that test error grows monotonical
 
 $$\mathbb{P}\!\left[\sup_{h\in\mathcal{H}}\;|\widehat{R}(h) - R(h)| > \varepsilon\right]\;\le\; 4\cdot\big(2en/d_{\text{VC}}\big)^{d_{\text{VC}}}\,\exp\!\big(-n\varepsilon^2/8\big),$$
 
-which yields a generalisation gap of order $\widetilde{O}\!\big(\sqrt{d_{\text{VC}}/n}\big)$. For a fully-connected network with $p$ parameters one has $d_{\text{VC}} = O(p \log p)$ (Bartlett, Harvey, Liaw, & Mehrabian, 2019), so the bound is *vacuous* whenever $p \gtrsim n$. Norm-based bounds (Bartlett, Foster, & Telgarsky, 2017; Lecture 9–10) replace $d_{\text{VC}}$ by an architecture-aware Rademacher complexity scaling with the products of layer-wise spectral norms, which is tighter for trained networks but still grows monotonically with capacity.
+which yields a generalisation gap of order $\widetilde{O}\!\big(\sqrt{d_{\text{VC}}/n}\big)$. For a fully-connected network with $p$ parameters one has $d_{\text{VC}} = O(p \log p)$ (Bartlett, Harvey, Liaw, & Mehrabian, 2019), so the bound is *vacuous* whenever $p \gtrsim n$. Norm- and margin-based bounds (Bartlett, Foster, & Telgarsky, 2017; Neyshabur, Bhojanapalli, & Srebro, 2018; Lectures 9–12) replace $d_{\text{VC}}$ by architecture-aware quantities involving layer-wise spectral norms, margins, and perturbation stability. These bounds are closer to the geometry of the learned interpolator than raw parameter count, but they still do not by themselves predict the full double-descent curve unless paired with a theory of which interpolator training selects.
 
 Either of these classical bounds, taken at face value, would predict that a 700,000-parameter ResNet trained on $n = 4{,}000$ noisy CIFAR-10 images cannot generalise. Yet our DD-Recovery sweep (Section 5.3) reaches $55.4\%$ test accuracy at $k = 2$ ($p \approx 6.96 \times 10^5$, $p/n \approx 174$). The classical prediction fails by a wide margin.
 
@@ -97,7 +99,7 @@ In all three cases the canonical EMC prediction (Nakkiran et al., 2021) is $\arg
 
 ### 2.5 Lecture-mapping table
 
-Every experiment in this report is anchored to one or more EECS 6699 lecture concepts. The mapping below makes that explicit; it doubles as a reading guide for graders revisiting the original course material. Lecture numbers refer to L1–L11 as delivered.
+Every experiment in this report is anchored to one or more EECS 6699 lecture concepts. The mapping below makes that explicit; it doubles as a reading guide for graders revisiting the original course material. Lecture numbers refer to L1–L12 as delivered.
 
 | Section / Experiment | Primary lecture concept | Lecture | Use in this report |
 |---|---|---|---|
@@ -115,7 +117,7 @@ Every experiment in this report is anchored to one or more EECS 6699 lecture con
 | §6.5 Person A — ridge sweep | Ridge regularisation smooths peak | L10 | Confirms variance-control mechanism for DD |
 | §6.6 Person B — noise-rate sweep | Noise as a stress test for interpolation | L1–L2, L9 | Determines minimum noise needed for visible peak |
 | §6.7 Person C — Adam vs SGD | Implicit-bias comparison; optimiser as second-order axis | L5–L6 | Falsification: optimiser is secondary to EMC |
-| §6.8 Person D — bounds critique | Norm-based generalisation bounds vs observed risk | L9 | Direct empirical critique of Bartlett et al. (2017) |
+| §6.8 Person D — bounds critique | Norm-/margin-based generalisation bounds vs observed risk | L9–L12 | Direct empirical critique of Bartlett et al. (2017) and Neyshabur et al. (2018) |
 | §6.9 Sample-wise NN DD (fractional-$k$) | Peak shifts with $n$ (sample-wise on NN) | L9–L10 | NN-side analogue of Exp 2; supports EMC framing |
 | §6.10 NN spectral mechanism | Penultimate-feature spectrum, last-layer NTK | L7–L8, L10 | NN-side analogue of Exp 8 (RFF condition number) |
 | §6.11 Fractional-$k$ epoch-wise + early-stop | Validation-test mismatch, optimisation dynamics | L5–L6, L9 | Refines Exp 4 with capacity-dependent early-stop $\Delta$ |
@@ -765,7 +767,7 @@ Neural networks add complexity because:
 
 **Neural Tangent Kernel (Lectures 7–8):** Our RFF experiments are the kernel-method analogue of the NTK regime. As Jacot et al. (2018) showed, infinitely wide networks behave as kernel machines with a fixed NTK. The double descent we observe in RFF is precisely the phenomenon that occurs in this lazy training regime. The smoother behavior in actual neural networks may reflect the *feature learning* regime (Chizat & Bach, 2018), where the NTK evolves during training.
 
-**Generalization Theory (Lecture 9):** Classical Rademacher complexity bounds predict $\mathfrak{R}_n(\mathcal{F}) \sim \sqrt{p/n}$, giving a test error bound that increases monotonically with $p$. This completely misses the second descent. The failure highlights that **parameter counting is the wrong complexity measure** — what matters is the norm/smoothness of the learned function. Norm-based bounds (Bartlett et al., 2017; Neyshabur et al., 2018) and the theory of benign overfitting (Bartlett et al., 2020) provide tighter, non-vacuous bounds that can accommodate double descent.
+**Generalization Theory (Lectures 9–12):** Classical Rademacher/VC-style bounds that scale with raw parameter count become vacuous when $p \gg n$, so they miss the second descent. The failure highlights that **parameter counting is the wrong complexity measure** — what matters is the geometry of the learned interpolator, including norm, margin, smoothness, and alignment with the data distribution. Spectrally-normalized margin bounds (Bartlett et al., 2017), PAC-Bayesian spectral-norm bounds (Neyshabur et al., 2018), and benign-overfitting theory (Bartlett et al., 2020) provide a more appropriate framing for why an interpolating model can generalize after the peak.
 
 ### 7.3 Role of Label Noise
 
@@ -889,4 +891,3 @@ PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
 # 3. Open the analysis notebook
 jupyter notebook notebooks/analysis.ipynb
 ```
-
