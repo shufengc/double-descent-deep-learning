@@ -223,11 +223,11 @@ Theory (Belkin/Hastie proportional limit): $k^* \propto \sqrt{n}$. Our data is q
 All measured on the trained fractional-$k$ ResNet at end of training (§6.10):
 
 1. **Penultimate-feature stable rank** (centered): local extremum at $k=0.1875$.
-2. **Bartlett (2020) Thm 1 effective rank** $r_k(\Sigma) = \mathrm{tr}(\Sigma)/\|\Sigma\|_\mathrm{op}$ on penultimate-feature covariance: dip-and-recover at $k=0.1875$.
-3. **Full empirical-NTK Gram** (Z. Li, all params): $\kappa = 18.7 \to 558.8 \to 79.1 \to 40.3$ at $k = 0.125 \to 0.1875 \to 0.25 \to 0.5$.
-4. **Tight full-NTK** (n=2k, 800 ep, 32 samples, 9 $k$): confirms spike at converged budget.
+2. **Bartlett (2020) Thm 1 effective rank** $r_k(\Sigma) = \mathrm{tr}(\Sigma)/\|\Sigma\|_\mathrm{op}$: dip-and-recover at $k=0.1875$.
+3. **Full empirical-NTK Gram** (Z. Li, undertrained): $\kappa = 18.7 \to 558.8 \to 79.1 \to 40.3$ at $k = 0.125 \to 0.1875 \to 0.25 \to 0.5$.
+4. **Tight full-NTK** (converged, $n=2k$, 800 ep, 32 samples): $\kappa = 1700 \to 407 \to 121$ at $k = 0.125 \to 0.1875 \to 0.25$ — peak shifts left to $k=0.125$ at converged budget.
 
-**Same $k$, four independent measurements.**
+**Combined**: spectral phase transition spans $k \in [0.125, 0.25]$. Test-acc recovery happens in the same range (24.6% $\to$ 40.5% $\to$ 42.1%).
 
 </div>
 
