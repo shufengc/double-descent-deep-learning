@@ -579,7 +579,28 @@ Two structural features appear simultaneously at $k = 0.1875$: features are *mos
 
 3. **Width past the recovery onset trades feature-dimension *coverage* for raw *capacity*.** The over-parameterised tail ($k = 0.5, 1, 2$) has high absolute participation ratio ($\text{PR} \approx 7\text{--}10$) but low *fractional* PR ($\le 0.23$): the network has many available directions but uses a shrinking subset of them. This is consistent with the benign-overfitting picture (Bartlett et al., 2020): generalisation in over-parameterised models depends on *effective* dimension, not raw parameter count, and the effective dimension does not need to keep up with $c_3$ for test accuracy to recover.
 
-**Caveats.** The last-layer empirical NTK $ZZ^\top$ captures only the Jacobian of the linear classifier weights, not the full per-parameter Jacobian. A full empirical-NTK analysis (e.g.\ via $\texttt{torch.func.jacrev}$ over all model parameters) would strengthen the claim, particularly the link to the lazy-training regime; we leave this as a natural follow-up. The 500-epoch budget for the spectral sweep is shorter than the 2{,}000-epoch DD-Recovery sweep, so absolute test accuracies are slightly lower at large $k$; the structural conclusions are unchanged because (i) the relative ordering of test accuracies across $k$ matches the §5.3 sweep and (ii) the existing 2{,}000-epoch hybrid eff_rank from §5.3's $\texttt{main}$ summary independently confirms the singularity at $k = 0.1875$.
+**Honest framing.** We use "DD-recovery onset" rather than "DD peak" to describe $k=0.1875$ in this paper. The headline trajectory at $n=4{,}000$ — best test accuracy $25.7\% \to 32.9\% \to 49.2\% \to 52.3\% \to 50.5\% \to 51.2\% \to 54.2\% \to 52.9\% \to 55.1\%$ across $k \in \{0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1.0, 2.0\}$ — is dominated by an under-fit$\rightarrow$recovery transition in the lower half of the $k$ grid. A genuine bias-variance "valley" appears between $k=0.375$ ($50.5\%$) and $k=0.5$ ($51.2\%$), a roughly $1$-$2$ pp dip relative to the $k=0.25$ ($52.3\%$) and $k=0.75$ ($54.2\%$) neighbours. The U-shape exists but is shallow; the dominant signal is the rapid recovery onset at $k=0.1875$, which is precisely where the spectral diagnostics localise the phase transition. We work in the noise-amplified regime (15% label noise) following Belkin et al. (2019) §3.2; without injected label noise the peak is much shallower or vanishes (Person B, §6.6).
+
+#### 6.10.1 Full empirical-NTK confirmation (Z. Li)
+
+**Origin.** Following Jacot et al. (2018), the empirical NTK at training endpoint is $\Theta(x, x') = \nabla_\theta f(x;\theta)^\top \nabla_\theta f(x';\theta)$ — the full per-parameter Jacobian Gram matrix, not just the last-layer projection $ZZ^\top$ used in §6.10.
+
+**Setup (Z. Li, contributed).** Quick verification at $k \in \{0.125, 0.1875, 0.25, 0.5\}$, $n=1{,}000$, 15% noise, 200 epochs, NTK computed on $N=12$ test samples × 10 logits via $\texttt{torch.func.jacrev}$ over all model parameters. Diagnostics on the $12{\times}12$ NTK Gram: trace, top eigenvalue, condition number, stable rank.
+
+![Figure 18: Full empirical-NTK Gram diagnostics versus $k$ (Z. Li, 4 widths)](figures/full_empirical_ntk_quick.png)
+
+**Result.** The Gram matrix exhibits a sharp irregularity at exactly $k=0.1875$:
+
+| $k$ | trace | top eig | cond | stable rank |
+|---|---:|---:|---:|---:|
+| 0.125 | 2{,}997 | 1{,}129.6 | 18.7 | 2.65 |
+| **0.1875** | **263{,}635** | **175{,}741** | **558.8** | **1.50** ← spike |
+| 0.25 | 328{,}626 | 147{,}911 | 79.1 | 2.22 |
+| 0.5 | 2{,}290{,}400 | 966{,}950 | 40.3 | 2.37 |
+
+The condition number at $k=0.1875$ is ~30× the value at $k=0.125$ and ~7× the value at $k=0.25$ — a dramatically larger irregularity than the penultimate-feature-only diagnostic in §6.10. Stable rank simultaneously collapses to $1.50$ (out of $\min(N, P) = 12$). Both signals localise the same phase transition that the penultimate-feature diagnostic and the test-accuracy curve identify. **The mechanism we conjectured in §6.10 — that the DD-recovery onset coincides with a feature-Gram conditioning collapse — holds at the full Jacobian level, not just at the last layer.**
+
+**Caveat.** This is a quick verification: $n=1{,}000$ is smaller than our headline $n=4{,}000$, 200 epochs is undertrained for low $k$ (k=0.125 reaches only $15.1\%$ train accuracy here), and 12 NTK samples is a very thin Gram matrix. We extend this in §6.10.2 to a tightened sweep at $n=2{,}000$, 800 epochs, 32 NTK samples, 9 $k$-values for triple-witness consistency at the tightened-budget setting.
 
 ### 6.11 Fractional-$k$ epoch-wise dynamics and early stopping
 
