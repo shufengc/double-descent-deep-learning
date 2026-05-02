@@ -295,7 +295,7 @@ We train CNNs of varying widths on a CIFAR-10 subset with $n = 4000$ samples. Th
 
 ![Figure 4b: ResNet18 vs fractional-$k$ controlled comparison](figures/resnet18_vs_fractionalk.png)
 
-**Result.** \[TBD: table when run completes — width multipliers $\times \{0.5, 1, 2\}$ × best test acc.\] All three ResNet18 variants sit at $p/n \in [700, 11{,}200]$, well past the interpolation threshold. The trajectory is nearly **flat** across the three multipliers — no DD peak, no recovery transition. The fractional-$k$ ResNet (with same hyperparameters but continuous width axis from $k=0.0625$ to $k=2$) traverses 24.9% → 49.0% → 55.4% on the same axis.
+**Result.** \[TBD: table to be filled when the controlled sweep completes; deferred to paper week due to compute constraints. Preliminary observation: all three ResNet18 width multipliers sit at $p/n \in [700, 11{,}200]$ — well past the interpolation threshold — and the trajectory is expected to be nearly **flat** across the three multipliers (no DD peak, no recovery transition). The fractional-$k$ ResNet (same hyperparameters, continuous width axis $k=0.0625$ to $k=2$) traverses 24.9% → 49.0% → 55.4% on the same axis.\]
 
 **Diagnosis.** Literal ResNet18 cannot reveal DD at $n=4{,}000$ because its discrete BasicBlock widths cannot continuously span the threshold. The fractional-$k$ family is a deliberate architectural choice that turns width into a smooth axis through the threshold. This is the controlled comparison that the headline claim depends on.
 
