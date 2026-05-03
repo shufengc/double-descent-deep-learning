@@ -132,6 +132,9 @@ python3 -m src.experiments.exp_samplewise_nn \
     --ns 1000,2000 --ks 0.0625,0.125,0.25,0.5,1.0 --seeds 42,7 --epochs 1500
 python3 -m src.experiments.exp_samplewise_nn_plot  # pools with main/nslice for 4-curve figure
 
+# Activation ablation at the DD-recovery transition (k=0.1875; 6 GPU runs)
+python3 -m src.experiments.exp_activation_ablation --device cuda
+
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
