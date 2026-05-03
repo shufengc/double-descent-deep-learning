@@ -134,6 +134,9 @@ python3 -m src.experiments.exp_samplewise_nn \
     --ns 1000,2000 --ks 0.0625,0.125,0.25,0.5,1.0 --seeds 42,7 --epochs 1500
 python3 -m src.experiments.exp_samplewise_nn_plot  # pools with main/nslice for 4-curve figure
 
+# Bartlett-2020-style effective-rank bound diagnostic (no GPU; post-processing only)
+python3 -m src.experiments.exp_bartlett_bound_eval
+
 # Supplemental three directions: OOD vs ID, ordered n, early stopping
 # S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
@@ -178,6 +181,12 @@ make figures
 ![Epoch-wise SGD vs Adam (test error + train accuracy)](results/expC_epoch_sgd_resnet/dd_curves.png)
 
 ![Epoch-wise DD panel (full checkpoints)](results/expC_epoch_sgd_resnet/epoch_wise_dd.png)
+
+**Bartlett-style effective-rank bound diagnostic:**
+
+This post-hoc theory diagnostic compares Bartlett-style effective-rank proxies with observed DD-Recovery test risk. Effective rank increases with width, but the calibrated proxy becomes increasingly loose, suggesting that Bartlett-style quantities are useful as complexity diagnostics but not tight numerical risk predictors for trained ResNets.
+
+![Bartlett bound evaluation](figures/bartlett_bound_eval_vs_observed.png)
 
 **Exp A — Nakkiran recipe: all k values show catastrophic memorization (train 100%, test ~7%):**
 
@@ -252,6 +261,7 @@ After Exp A showed all integer k values were past the interpolation threshold, t
 | Zhengda | λ sweep (ridge regularization) | λ=0.01 reduces DD peak by >90%; λ=1.0 eliminates it entirely |
 | Zhengda | Noise comparison | 0/10/20/40% noise; 40% anomaly identified (seed artifact) |
 | **Zhengda** | **Exp8: Noise×λ mechanism (5-seed)** | **Full mechanism proof: ridge lowers condition number → reduces effective DoF → shrinks DD peak. Rigorous 5-seed statistics across 4 noise × 7 lambda** |
+| Zhengda | Bartlett-style bound evaluation | Effective-rank quantities are informative as representation-complexity diagnostics, but calibrated Bartlett-style proxies remain loose/pessimistic for trained ResNets |
 | Yusheng | Spectral analysis | Condition number explodes at p/n=1 (24 → 17,132), explaining the variance spike |
 | Yusheng | σ sensitivity | Kernel bandwidth σ=5 optimal (89.3% acc); σ<2 gives random chance |
 | **Yusheng** | **Clean-label architecture sweep** | **ResNet 76.1% accuracy — proves architecture is correct; label noise is the culprit** |
@@ -270,6 +280,7 @@ After Exp A showed all integer k values were past the interpolation threshold, t
 ![Noise×lambda peak heatmap](results/zhengda_exp8_noise_lambda_full/peak_heatmap.png)
 
 ![Noise×lambda mechanism curves](results/zhengda_exp8_noise_lambda_full/mechanism_curves.png)
+
 
 **Yusheng — Spectral analysis: condition number explosion at p/n=1:**
 
