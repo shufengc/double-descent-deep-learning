@@ -1,0 +1,11 @@
+{
+  "activation": "tanh",
+  "k": 0.1875,
+  "n_train": 4000,
+  "noise_rate": 0.15,
+  "epochs": 1500,
+  "seed": 42,
+  "batch_size": 256,
+  "lr": 0.0001,
+  "augment": true
+}
