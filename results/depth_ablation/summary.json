@@ -1,0 +1,66 @@
+[
+  {
+    "k": 0.5,
+    "n_stages": 2,
+    "n": 4000,
+    "seed": 42,
+    "params": 11122,
+    "widths": [
+      8,
+      16
+    ],
+    "best_test_acc": 53.69,
+    "final_test_acc": 53.21,
+    "final_train_acc": 55.775,
+    "effective_rank": 13.4837464169409
+  },
+  {
+    "k": 0.5,
+    "n_stages": 2,
+    "n": 4000,
+    "seed": 7,
+    "params": 11122,
+    "widths": [
+      8,
+      16
+    ],
+    "best_test_acc": 50.6,
+    "final_test_acc": 50.6,
+    "final_train_acc": 53.85,
+    "effective_rank": 11.675954239095685
+  },
+  {
+    "k": 0.5,
+    "n_stages": 4,
+    "n": 4000,
+    "seed": 42,
+    "params": 176402,
+    "widths": [
+      8,
+      16,
+      32,
+      64
+    ],
+    "best_test_acc": 48.65,
+    "final_test_acc": 45.44,
+    "final_train_acc": 96.325,
+    "effective_rank": 12.61974455481956
+  },
+  {
+    "k": 0.5,
+    "n_stages": 4,
+    "n": 4000,
+    "seed": 7,
+    "params": 176402,
+    "widths": [
+      8,
+      16,
+      32,
+      64
+    ],
+    "best_test_acc": 46.89,
+    "final_test_acc": 43.21,
+    "final_train_acc": 96.1,
+    "effective_rank": 15.899517293998406
+  }
+]

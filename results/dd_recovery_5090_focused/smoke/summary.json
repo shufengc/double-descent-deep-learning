@@ -1,0 +1,12 @@
+[
+  {
+    "k": 1.0,
+    "n": 1000,
+    "seed": 42,
+    "params": 175258,
+    "best_test_acc": 40.13,
+    "final_test_acc": 40.13,
+    "final_train_acc": 59.3,
+    "effective_rank": 6.820946299710137
+  }
+]
