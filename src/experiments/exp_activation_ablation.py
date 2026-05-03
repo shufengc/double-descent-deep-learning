@@ -14,7 +14,7 @@ Smoke test:
 
 Outputs:
   results/activation_ablation/results.json
-  results/activation_ablation/activation_ablation.png
+  results/activation_ablation/dd_curves.png
 
 Raw per-run JSON files are cached locally under
 results/activation_ablation/{activation}_k{K}_n{N}_ep{EP}_s{S}/ and ignored by
@@ -419,7 +419,7 @@ def main():
     p.add_argument("--out-root", default="./results/activation_ablation")
     p.add_argument(
         "--figure-path",
-        default="./results/activation_ablation/activation_ablation.png",
+        default="./results/activation_ablation/dd_curves.png",
     )
     p.add_argument("--device", default="cuda")
     p.add_argument("--no-augment", action="store_true")
