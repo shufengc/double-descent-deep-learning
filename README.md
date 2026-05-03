@@ -40,6 +40,7 @@ We use two complementary approaches:
 │       ├── personC_optimizer_compare.py  # Solo (04-30): CNN Adam vs SGD
 │       ├── personC_plot.py           # Solo (04-30): C plotting
 │       ├── personD_bounds_figure.py  # Solo (04-30): bounds-vs-observed figure
+│       ├── exp_bartlett_bound_eval.py # Bartlett-style effective-rank bound diagnostic
 │       ├── exp_samplewise_nn.py      # §6.9 (05-01): sample-wise NN DD, n×k sweep
 │       └── exp_samplewise_nn_plot.py # §6.9 (05-01): plots 4-curve figure
 ├── results/
@@ -67,6 +68,7 @@ We use two complementary approaches:
 │   ├── zhengda_exp8_noise_lambda_full/     # Zhengda Exp8: full 4-noise×7-lambda×5-seed sweep
 │   ├── zhengda_exp8_noise_lambda_mechanism/ # Zhengda Exp8: mechanism analysis (cond#, DoF)
 │   ├── yusheng_exp5_architecture_clean_yz_recipe/ # Yusheng: clean-label arch sweep (76.1% acc)
+|   ├── bartlett_bound_eval/       # Bartlett-style bound/proxy vs observed risk
 │   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
 │   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
 │   └── dd_recovery_5090_focused/     # DD Recovery: fractional-k 29-run campaign (04-28)
