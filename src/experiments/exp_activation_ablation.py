@@ -378,13 +378,12 @@ def plot_summary(rows, figure_path):
             color="black",
             s=24,
             zorder=3,
-            label="Individual seed runs" if i == 0 else None,
         )
     axes[0].set_xticks(x, [act.upper() for act in activations])
+    axes[0].set_xlabel("Black dots: individual seed runs (seeds 42 and 7)")
     axes[0].set_ylabel("Best test accuracy (%)")
     axes[0].set_title("Activation ablation at k=0.1875")
     axes[0].grid(axis="y", alpha=0.25)
-    axes[0].legend(loc="upper left", frameon=False)
 
     axes[1].bar(x, eff_means, color=colors, alpha=0.78)
     axes[1].set_xticks(x, [act.upper() for act in activations])
