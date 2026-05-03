@@ -13,9 +13,12 @@ Smoke test:
   python -m src.experiments.exp_activation_ablation --smoke --device cpu
 
 Outputs:
-  results/activation_ablation/{activation}_k{K}_n{N}_ep{EP}_s{S}/results.json
-  results/activation_ablation/summary.json
-  figures/activation_ablation.png
+  results/activation_ablation/results.json
+  results/activation_ablation/activation_ablation.png
+
+Raw per-run JSON files are cached locally under
+results/activation_ablation/{activation}_k{K}_n{N}_ep{EP}_s{S}/ and ignored by
+git; the committed result surface stays to one JSON and one figure.
 """
 
 from __future__ import annotations
@@ -334,9 +337,9 @@ def summarize(results, out_root):
         )
     out_root = Path(out_root)
     out_root.mkdir(parents=True, exist_ok=True)
-    summary_path = out_root / "summary.json"
+    summary_path = out_root / "results.json"
     summary_path.write_text(json.dumps(rows, indent=2))
-    print(f"[activation] wrote summary: {summary_path}", flush=True)
+    print(f"[activation] wrote results: {summary_path}", flush=True)
     return rows
 
 
@@ -414,7 +417,10 @@ def main():
     p.add_argument("--num-workers", type=int, default=2)
     p.add_argument("--data-dir", default="./data")
     p.add_argument("--out-root", default="./results/activation_ablation")
-    p.add_argument("--figure-path", default="./figures/activation_ablation.png")
+    p.add_argument(
+        "--figure-path",
+        default="./results/activation_ablation/activation_ablation.png",
+    )
     p.add_argument("--device", default="cuda")
     p.add_argument("--no-augment", action="store_true")
     p.add_argument("--smoke", action="store_true")
