@@ -9,6 +9,31 @@ Generates 3 figures:
 import json
 import os
 import glob
+
+# ----- BEGIN PATCH: metric switching globals -----
+import argparse as _argparse
+
+_METRIC_KEYS = {
+    "best_test_acc":  ("best_test_mean",  "best_test_std"),
+    "final_test_acc": ("final_test_mean", "final_test_std"),
+}
+
+ARG_METRIC = "best_test_acc"   # set by main() at runtime
+ARG_SUFFIX = ""                 # set by main() at runtime
+
+
+def _metric_mean_key():
+    return _METRIC_KEYS[ARG_METRIC][0]
+
+
+def _metric_std_key():
+    return _METRIC_KEYS[ARG_METRIC][1]
+
+
+def _metric_label():
+    return "Best test" if ARG_METRIC == "best_test_acc" else "Final test"
+# ----- END PATCH -----
+
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -93,8 +118,8 @@ def plot_dd_curve_main():
     k_vals = sorted(agg.keys())
     params = [agg[k]["params"] for k in k_vals]
     train_mean = np.array([agg[k]["train_mean"] for k in k_vals])
-    test_mean  = np.array([agg[k]["best_test_mean"] for k in k_vals])
-    test_std   = np.array([agg[k]["best_test_std"] for k in k_vals])
+    test_mean  = np.array([agg[k][_metric_mean_key()] for k in k_vals])
+    test_std   = np.array([agg[k][_metric_std_key()] for k in k_vals])
 
     # Convert accuracy to error
     train_err = 100 - train_mean
@@ -105,7 +130,7 @@ def plot_dd_curve_main():
     fig, ax = plt.subplots(figsize=(8, 5))
 
     ax.semilogx(params, train_err, "b--o", linewidth=1.8, markersize=6, label="Train error")
-    ax.semilogx(params, test_err,  "r-o",  linewidth=2.0, markersize=6, label="Test error (best, mean of 2 seeds)")
+    ax.semilogx(params, test_err,  "r-o",  linewidth=2.0, markersize=6, label=f"Test error ({_metric_label().lower()}, mean of 2 seeds)")
     ax.fill_between(params, test_err_lo, test_err_hi, color="red", alpha=0.15, label="Test error ±1 std (2 seeds)")
 
     # Annotate interpolation threshold region
@@ -131,7 +156,7 @@ def plot_dd_curve_main():
     ax2.set_xlabel("k (width multiplier)", fontsize=10)
 
     plt.tight_layout()
-    out = os.path.join(FIGS_DIR, "dd_curve_main.png")
+    out = os.path.join(FIGS_DIR, f"dd_curve_main{ARG_SUFFIX}.png")
     plt.savefig(out, bbox_inches="tight")
     plt.close()
     print(f"Saved: {out}")
@@ -150,14 +175,14 @@ def plot_nslice_comparison(agg_main):
     shared_k = sorted(set(agg_main.keys()) & set(agg_nslice.keys()))
 
     params_4k = [agg_main[k]["params"]           for k in shared_k]
-    test_4k   = [agg_main[k]["best_test_mean"]   for k in shared_k]
+    test_4k   = [agg_main[k][_metric_mean_key()]   for k in shared_k]
     params_8k = [agg_nslice[k]["params"]          for k in shared_k]
-    test_8k   = [agg_nslice[k]["best_test_mean"]  for k in shared_k]
+    test_8k   = [agg_nslice[k][_metric_mean_key()]  for k in shared_k]
 
     # Also include full main range for n=4000
     k_all = sorted(agg_main.keys())
     params_all_4k = [agg_main[k]["params"] for k in k_all]
-    test_all_4k   = [agg_main[k]["best_test_mean"] for k in k_all]
+    test_all_4k   = [agg_main[k][_metric_mean_key()] for k in k_all]
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.semilogx(params_all_4k, test_all_4k, "r-o", linewidth=2, markersize=6,
@@ -166,13 +191,13 @@ def plot_nslice_comparison(agg_main):
                 label="n=8,000 (seed=42)")
 
     ax.set_xlabel("Number of parameters (log scale)")
-    ax.set_ylabel("Best test accuracy (%)")
+    ax.set_ylabel(f"{_metric_label()} accuracy (%)")
     ax.set_title("N-Slice: Peak Shifts Right with More Training Data\nResNet-k, CIFAR-10, 15% label noise")
     ax.legend()
     ax.grid(True, which="both", alpha=0.3)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x):,}"))
     plt.tight_layout()
-    out = os.path.join(FIGS_DIR, "dd_curve_nslice.png")
+    out = os.path.join(FIGS_DIR, f"dd_curve_nslice{ARG_SUFFIX}.png")
     plt.savefig(out, bbox_inches="tight")
     plt.close()
     print(f"Saved: {out}")
@@ -244,17 +269,17 @@ def plot_mechanism_panel(agg_main):
         mem_fracs.append(np.mean(frac_list) if frac_list else np.nan)
 
     params_list = [agg_main[k]["params"] for k in k_vals]
-    test_means  = [agg_main[k]["best_test_mean"] for k in k_vals]
+    test_means  = [agg_main[k][_metric_mean_key()] for k in k_vals]
 
     ax3 = axes[2]
     ax3b = ax3.twinx()
     p1, = ax3.semilogx(params_list, [m * 100 for m in mem_fracs], "g-o",
                         linewidth=2, markersize=6, label="Memorization fraction (%)")
     p2, = ax3b.semilogx(params_list, test_means, "r--^",
-                         linewidth=2, markersize=6, label="Best test accuracy (%)")
+                         linewidth=2, markersize=6, label=f"{_metric_label()} accuracy (%)")
     ax3.set_xlabel("Number of parameters")
     ax3.set_ylabel("Memorization fraction (%)", color="green")
-    ax3b.set_ylabel("Best test accuracy (%)", color="red")
+    ax3b.set_ylabel(f"{_metric_label()} accuracy (%)", color="red")
     ax3.set_title("Memorization vs Generalization\n(mean of 2 seeds)")
     ax3.tick_params(axis="y", colors="green")
     ax3b.tick_params(axis="y", colors="red")
@@ -264,7 +289,7 @@ def plot_mechanism_panel(agg_main):
     ax3.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x):,}"))
 
     plt.tight_layout()
-    out = os.path.join(FIGS_DIR, "dd_mechanism_panel.png")
+    out = os.path.join(FIGS_DIR, f"dd_mechanism_panel{ARG_SUFFIX}.png")
     plt.savefig(out, bbox_inches="tight")
     plt.close()
     print(f"Saved: {out}")
@@ -279,7 +304,7 @@ def print_summary(agg):
     print(f"{'k':>8} {'params':>8} {'train%':>8} {'best_te%':>9} {'fin_te%':>9} {'n_seeds':>8}")
     for k, d in sorted(agg.items()):
         print(f"{k:8.4f} {d['params']:8,d} {d['train_mean']:8.2f} "
-              f"{d['best_test_mean']:9.2f}±{d['best_test_std']:.1f} "
+              f"{d[_metric_mean_key()]:9.2f}±{d[_metric_std_key()]:.1f} "
               f"{d['final_test_mean']:9.2f} {len(d['seeds']):8d}")
 
 
@@ -288,9 +313,21 @@ def print_summary(agg):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("Generating DD recovery figures...")
-    agg_main = plot_dd_curve_main()
-    print_summary(agg_main)
-    plot_nslice_comparison(agg_main)
-    plot_mechanism_panel(agg_main)
-    print("\nAll figures saved to:", FIGS_DIR)
+    _ap = _argparse.ArgumentParser()
+    _ap.add_argument("--metric", default="best_test_acc",
+                     choices=["best_test_acc", "final_test_acc"])
+    _ap.add_argument("--suffix", default="")
+    _args = _ap.parse_args()
+    ARG_METRIC = _args.metric
+    ARG_SUFFIX = _args.suffix
+    # rebind into the module's own globals so functions see the updated value
+    import sys as _sys
+    _mod = _sys.modules[__name__]
+    _mod.ARG_METRIC = _args.metric
+    _mod.ARG_SUFFIX = _args.suffix
+    _agg = plot_dd_curve_main()
+    plot_nslice_comparison(_agg)
+    try:
+        plot_mechanism_panel(_agg)
+    except NameError:
+        pass  # mechanism panel function may not exist in older versions

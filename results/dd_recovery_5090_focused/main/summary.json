@@ -2,12 +2,32 @@
   {
     "k": 0.0625,
     "n": 4000,
+    "seed": 42,
+    "params": 823,
+    "best_test_acc": 24.2,
+    "final_test_acc": 24.2,
+    "final_train_acc": 22.575,
+    "effective_rank": 15.62740645008834
+  },
+  {
+    "k": 0.0625,
+    "n": 4000,
     "seed": 7,
     "params": 823,
     "best_test_acc": 25.69,
     "final_test_acc": 25.69,
     "final_train_acc": 24.95,
     "effective_rank": 11.746761303570613
+  },
+  {
+    "k": 0.125,
+    "n": 4000,
+    "seed": 42,
+    "params": 2988,
+    "best_test_acc": 35.35,
+    "final_test_acc": 35.35,
+    "final_train_acc": 33.475,
+    "effective_rank": 31.050024311176333
   },
   {
     "k": 0.125,
@@ -22,12 +42,32 @@
   {
     "k": 0.1875,
     "n": 4000,
+    "seed": 42,
+    "params": 6505,
+    "best_test_acc": 48.76,
+    "final_test_acc": 48.75,
+    "final_train_acc": 49.4,
+    "effective_rank": 12.12832420289463
+  },
+  {
+    "k": 0.1875,
+    "n": 4000,
     "seed": 7,
     "params": 6505,
     "best_test_acc": 49.17,
     "final_test_acc": 48.89,
     "final_train_acc": 49.65,
     "effective_rank": 10.237349006962505
+  },
+  {
+    "k": 0.25,
+    "n": 4000,
+    "seed": 42,
+    "params": 11374,
+    "best_test_acc": 48.46,
+    "final_test_acc": 47.93,
+    "final_train_acc": 55.375,
+    "effective_rank": 13.105074189449176
   },
   {
     "k": 0.25,
@@ -42,12 +82,72 @@
   {
     "k": 0.375,
     "n": 4000,
+    "seed": 42,
+    "params": 25168,
+    "best_test_acc": 52.34,
+    "final_test_acc": 50.19,
+    "final_train_acc": 68.325,
+    "effective_rank": 13.924202359018631
+  },
+  {
+    "k": 0.375,
+    "n": 4000,
     "seed": 7,
     "params": 25168,
     "best_test_acc": 50.54,
     "final_test_acc": 49.12,
     "final_train_acc": 69.075,
     "effective_rank": 17.088956599856168
+  },
+  {
+    "k": 0.3,
+    "n": 4000,
+    "seed": 42,
+    "params": 16422,
+    "best_test_acc": 51.53,
+    "final_test_acc": 49.95,
+    "final_train_acc": 62.5,
+    "effective_rank": 14.575337460332356
+  },
+  {
+    "k": 0.3,
+    "n": 4000,
+    "seed": 7,
+    "params": 16422,
+    "best_test_acc": 50.98,
+    "final_test_acc": 49.29,
+    "final_train_acc": 62.325,
+    "effective_rank": 15.284328325952298
+  },
+  {
+    "k": 0.4,
+    "n": 4000,
+    "seed": 42,
+    "params": 29153,
+    "best_test_acc": 50.3,
+    "final_test_acc": 46.93,
+    "final_train_acc": 71.775,
+    "effective_rank": 18.358550523463826
+  },
+  {
+    "k": 0.4,
+    "n": 4000,
+    "seed": 7,
+    "params": 29153,
+    "best_test_acc": 50.91,
+    "final_test_acc": 47.27,
+    "final_train_acc": 71.875,
+    "effective_rank": 15.11824139184284
+  },
+  {
+    "k": 0.5,
+    "n": 4000,
+    "seed": 42,
+    "params": 44370,
+    "best_test_acc": 54.14,
+    "final_test_acc": 48.13,
+    "final_train_acc": 87.075,
+    "effective_rank": 19.02185965047574
   },
   {
     "k": 0.5,
@@ -58,6 +158,36 @@
     "final_test_acc": 47.09,
     "final_train_acc": 82.05,
     "effective_rank": 18.94790475445189
+  },
+  {
+    "k": 0.6,
+    "n": 4000,
+    "seed": 42,
+    "params": 62785,
+    "best_test_acc": 51.07,
+    "final_test_acc": 46.33,
+    "final_train_acc": 93.975,
+    "effective_rank": 25.960471170882126
+  },
+  {
+    "k": 0.6,
+    "n": 4000,
+    "seed": 7,
+    "params": 62785,
+    "best_test_acc": 52.52,
+    "final_test_acc": 47.38,
+    "final_train_acc": 92.425,
+    "effective_rank": 20.49828789083876
+  },
+  {
+    "k": 0.75,
+    "n": 4000,
+    "seed": 42,
+    "params": 98998,
+    "best_test_acc": 51.52,
+    "final_test_acc": 46.67,
+    "final_train_acc": 98.8,
+    "effective_rank": 20.392371948171863
   },
   {
     "k": 0.75,
@@ -72,12 +202,32 @@
   {
     "k": 1.0,
     "n": 4000,
+    "seed": 42,
+    "params": 175258,
+    "best_test_acc": 52.76,
+    "final_test_acc": 49.57,
+    "final_train_acc": 99.575,
+    "effective_rank": 21.631519992390288
+  },
+  {
+    "k": 1.0,
+    "n": 4000,
     "seed": 7,
     "params": 175258,
     "best_test_acc": 52.86,
     "final_test_acc": 51.03,
     "final_train_acc": 99.425,
     "effective_rank": 20.575187787395
+  },
+  {
+    "k": 2.0,
+    "n": 4000,
+    "seed": 42,
+    "params": 696618,
+    "best_test_acc": 55.79,
+    "final_test_acc": 55.56,
+    "final_train_acc": 100.0,
+    "effective_rank": 21.776905023427094
   },
   {
     "k": 2.0,
