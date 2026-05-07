@@ -10,7 +10,7 @@
 
 ## Abstract
 
-Classical statistical learning theory predicts a U-shaped bias-variance tradeoff: increasing model complexity first reduces test error (decreasing bias) then increases it (increasing variance). Modern deep learning defies this prediction — massively over-parameterized models generalize well despite having far more parameters than training samples. This paper investigates the *double descent* phenomenon, which reconciles these observations by showing that test error exhibits a second descent beyond the interpolation threshold. We conduct four experiments spanning model-wise, sample-wise, and epoch-wise double descent using both Random Fourier Features (RFF) on MNIST and Convolutional Neural Networks (CNN) on CIFAR-10. Our RFF experiments produce textbook double descent curves with a dramatic test MSE spike of up to 129× at the interpolation threshold, amplified by label noise. We provide a theoretical analysis connecting double descent to the variance explosion in minimum-norm interpolation, the Neural Tangent Kernel regime, implicit regularization, and the failure of classical generalization bounds — all topics covered in the course.
+Classical statistical learning theory predicts a U-shaped bias-variance tradeoff: increasing model complexity first reduces test error (decreasing bias) then increases it (increasing variance). Modern deep learning defies this prediction — massively over-parameterized models can generalize despite having far more parameters than training samples. This paper investigates the *double descent* phenomenon through a single pipeline: first we reproduce textbook kernel double descent with Random Fourier Features (RFF) on MNIST; then we show why naive CNN/ResNet width sweeps on small noisy CIFAR-10 miss the phenomenon; finally we introduce a fractional-width ResNet family that continuously crosses the effective interpolation threshold and recovers the neural-network double descent trajectory. The RFF side produces a dramatic test-MSE spike of up to 129 at $p/n=1$, and the bias-variance decomposition shows that this spike is variance-dominated. The neural-network side shows that raw parameter count is the wrong axis: stock ResNet18 is already too over-parameterized at $n=4{,}000$, while fractional $k$ reveals underfitting, a corrected final-epoch valley, and over-parameterized recovery. A final metric audit finds that reporting `best_test_acc = max_t test_acc(t)` artificially flattens the valley; using final-epoch accuracy makes the double-descent shape stronger, not weaker. We connect the whole pipeline to variance explosion, Effective Model Complexity, NTK-style feature spectra, implicit regularization, and the failure of raw parameter-count generalization bounds.
 
 ---
 
@@ -38,6 +38,7 @@ This project aims to:
 1. **Empirically demonstrate** double descent across all three axes using both kernel methods and neural networks
 2. **Connect the phenomenon** to the mathematical foundations covered in EECS 6699 (approximation theory, NTK, generalization bounds, implicit regularization)
 3. **Analyze the role of label noise** as an amplifier of the interpolation peak
+4. **Explain why architecture and evaluation protocol matter**: a neural-network DD experiment must use a capacity axis that actually crosses the effective interpolation threshold, and it must avoid test-set selection through best-over-epochs reporting
 
 ---
 
@@ -121,6 +122,7 @@ Every experiment in this report is anchored to one or more EECS 6699 lecture con
 | §6.9 Sample-wise NN DD (fractional-$k$) | Peak shifts with $n$ (sample-wise on NN) | L9–L10 | NN-side analogue of Exp 2; supports EMC framing |
 | §6.10 NN spectral mechanism | Penultimate-feature spectrum, last-layer NTK | L7–L8, L10 | NN-side analogue of Exp 8 (RFF condition number) |
 | §6.11–§6.11.1 Fractional-$k$ epoch-wise, early-stop, train-time spectrum | Validation-test mismatch; penultimate stable rank vs time | L5–L6, L7–L8, L9 | Refines Exp 4; links §6.10 to training dynamics |
+| §7.1 Metric audit | Evaluation protocol and generalization measurement | L9–L12 | Shows why max-over-test-checkpoints is biased for DD claims |
 
 The table makes two structural claims explicit. First, every experiment in Sections 5–6 connects to at least one lecture concept — the project does not invent its theoretical framing. Second, §6.9–§6.11 develop the NN-side analogues of Exp 2 (sample-wise DD), Exp 8 (spectral mechanism), and Exp 4 (epoch-wise dynamics); §6.11.1 extends this line by tracking the §6.10 penultimate spectrum **during** training. These sections are not isolated add-ons but tied to the same lecture-aligned framing as their RFF counterparts. This 1-to-1 structural symmetry is the spine of the report.
 
@@ -172,7 +174,17 @@ Our RFF experiments directly study interpolation in an analogous kernel feature 
 
 ### 4.1 Experiments Overview
 
-We organise the work into two layers: a **Reproduction** layer (Experiments 1–4) that reproduces the textbook double-descent figures from Belkin et al. (2019) and Nakkiran et al. (2021), and an **Extensions / New Results** layer (Experiments 5–8 and Sections 6.5–6.8) that adds new scientific content beyond reproduction.
+The experimental pipeline is deliberately staged. We begin with a setting where double descent is mathematically clean (RFF + minimum-norm interpolation), then move to neural networks where the first naive attempt fails, then repair the capacity axis with a fractional-width ResNet, and finally audit whether the resulting curve survives stricter evaluation.
+
+| Stage | Purpose | Main output |
+|---|---|---|
+| 1. Kernel reproduction | Establish a clean baseline where $p/n$ is the true interpolation axis | RFF model-wise and sample-wise DD on MNIST |
+| 2. Mechanism checks | Test why the RFF peak appears | Noise sweep, ridge sweep, bias-variance decomposition |
+| 3. Neural-network stress test | Show that off-the-shelf width sweeps can miss DD | Small CNN and literal ResNet18 sit in the wrong effective-complexity regime |
+| 4. Capacity-axis repair | Build a model family that actually crosses the threshold | Fractional-$k$ ResNet DD-Recovery on CIFAR-10 |
+| 5. NN diagnostics and audit | Check whether the NN result is real and how it should be measured | Sample-wise shift, spectral witnesses, epoch-wise dynamics, final-vs-best metric audit |
+
+We therefore organise the work into two layers: a **Reproduction** layer (Experiments 1–4) that reproduces and stress-tests the textbook double-descent figures from Belkin et al. (2019) and Nakkiran et al. (2021), and an **Extensions / New Results** layer (Experiments 5–8 and Sections 6.5–6.13) that adds mechanism, robustness, neural-network diagnostics, and evaluation-protocol auditing.
 
 **Layer 1 — Reproduction:**
 
@@ -187,11 +199,14 @@ We organise the work into two layers: a **Reproduction** layer (Experiments 1–
 
 | Section | Lens | Headline question |
 |---|---|---|
-| 5–6.4 (Exp 5–8) | Robustness, theory, NN depth | Multi-seed validation; bias-variance decomposition; SGD+ResNet epoch-wise; Effective Model Complexity. |
+| 5.3.1 | Fractional-width architecture | Can a ResNet family be designed to traverse the interpolation threshold at $n=4{,}000$? |
+| 5–6.4 (Exp 5–8) | Robustness and theory | Multi-seed validation; bias-variance decomposition; SGD+ResNet epoch-wise; Effective Model Complexity. |
 | 6.5 — Person A | Regularisation | How does ridge $\lambda$ smooth the $p/n=1$ peak? |
 | 6.6 — Person B | Label noise | How does the peak amplify as noise rate grows from 0% to 40%? |
 | 6.7 — Person C | Optimiser & implicit bias | Why does Adam + noisy CIFAR-10 memorise without recovery while SGD does not? |
 | 6.8 — Person D | Generalisation theory | Why do classical VC / Rademacher bounds completely fail to predict the second descent? |
+| 6.9–6.13 | NN mechanism | Do sample-wise shifts, feature spectra, training dynamics, depth, and Hessian sharpness agree on the same transition? |
+| 7.1 | Metric audit | Does `best_test_acc` reporting hide or exaggerate the DD valley? |
 
 ### 4.2 Experiment 1–2: Random Fourier Features
 
@@ -211,6 +226,21 @@ We organise the work into two layers: a **Reproduction** layer (Experiments 1–
 - **Epochs**: 500 (Exp 3), 1000 (Exp 4)
 - **Label noise**: 0% and 20% (Exp 3); 20% (Exp 4)
 - **Widths**: $\{1, 2, 3, 4, 6, 8, 12, 16, 24, 32\}$ (Exp 3); $\{2, 4, 8\}$ (Exp 4)
+
+### 4.4 Fractional-$k$ ResNet and evaluation protocol
+
+The key neural-network design choice is the **fractional-$k$ ResNet**. A literal ResNet18 is too large for $n=4{,}000$: even its smallest practical width multiplier is already deep in the over-parameterized tail. We therefore use a 3-stage residual network with widths
+
+$$(c_1,c_2,c_3) = (\max(1,\mathrm{round}(16k)),\max(1,\mathrm{round}(32k)),\max(1,\mathrm{round}(64k))).$$
+
+Sweeping $k \in \{0.0625,0.125,0.1875,0.25,0.375,0.5,0.75,1.0,2.0\}$ spans roughly $823$ to $696{,}618$ parameters at $n=4{,}000$, which is wide enough to move from underfitting to memorization to over-parameterized recovery. All headline fractional-$k$ runs use CIFAR-10, 15% label noise, Adam with learning rate $10^{-4}$, data augmentation, and two seeds when compute permits.
+
+Evaluation is reported with two metrics when available:
+
+- **Final test accuracy**: the test accuracy at the last training epoch. This is the corrected headline metric because it does not select a checkpoint using the test set.
+- **Best test accuracy**: $\max_t \mathrm{test\_acc}(t)$ over logged checkpoints. This is useful diagnostically, but using it as the headline metric is a form of test-set selection and can flatten the double-descent valley.
+
+The May-5/May-6 audit re-aggregates both metrics and re-runs the Bartlett-style calibration with `final_test_acc` as the default. This audit is not a cosmetic change: it is part of the scientific pipeline, because the gap between best and final is concentrated in the over-parameterized valley where training becomes unstable.
 
 ### 4.5 Experiments 5–8: Shufeng Chen (sc5739) — Robustness, Theory, and NN Depth Study
 
@@ -233,7 +263,7 @@ This empirically confirms the theoretical prediction that the double descent pea
 
 **Experiment 8 (EMC):** We implement Definition 4 of Nakkiran et al.: $\text{EMC}_\epsilon(T, \text{model}) = \max\{n : \text{model achieves train error} < \epsilon \text{ on } n \text{ samples after } T \text{ epochs}\}$. We binary-search $n \in [50, 4000]$ for each $(k, T)$ pair using ResNet at $k \in \{1, 2, 4\}$ and $T \in \{50, 100, 200, 500\}$ epochs. The EMC curves quantify how "powerful" each model is as a function of training time.
 
-All experiments are implemented in Python using PyTorch. Random features experiments use NumPy with `float64` precision to ensure numerical stability near the interpolation threshold. Neural network experiments for Exp 7–8 are run on an NVIDIA RTX 4090 GPU. All training data is precomputed and resident on GPU memory to eliminate per-batch CPU transform overhead during long epoch runs. Code is reproducible with fixed random seed 42.
+All experiments are implemented in Python using PyTorch. Random features experiments use NumPy with `float64` precision to ensure numerical stability near the interpolation threshold. Neural-network experiments are run on local RTX 4090/5090-class GPUs and independently spot-checked on a Chameleon Cloud A100 80GB. All long training runs store JSON configs, per-epoch histories, `best_test_acc`, and `final_test_acc`, so downstream figures can be regenerated without manual table entry.
 
 ---
 
@@ -287,9 +317,26 @@ We train CNNs of varying widths on a CIFAR-10 subset with $n = 4000$ samples. Th
 
 2. **With 20% noise**: A striking memorization effect is visible. As width increases past the threshold, train error drops to 0% (perfect memorization of all labels, including corrupted ones), while test accuracy collapses to $\sim$7% — **below random chance** (10% for 10-class CIFAR-10). This means the network learns representations that are actively anti-correlated with the true labels, driven by the noisy training signal. At $w=32$ ($p/n = 28.4$): $0\%$ train error but $93.4\%$ test error.
 
-3. **Comparison with RFF**: The RFF experiments show a sharp peak followed by recovery because the minimum-norm linear solution in the over-parameterized regime automatically regularizes via small $\|w\|$. Neural networks with Adam do not recover because: (a) Adam's adaptive learning rates can amplify memorization of noise, (b) the nonlinear feature representation actively adapts to fit noisy patterns, and (c) the CNN architecture lacks the benign interpolation properties of kernel methods (Bartlett et al., 2020). This contrast highlights the importance of the optimization algorithm in determining whether over-parameterization helps or hurts.
+3. **Comparison with RFF**: The RFF experiments show a sharp peak followed by recovery because the minimum-norm linear solution in the over-parameterized regime automatically regularizes via small $\|w\|$. The CNN sweep does not recover because it mixes several effects at once: the capacity grid is coarse, the optimizer adapts the representation, and the model is quickly pushed into a memorization regime under label noise. This negative result motivates the next step of the pipeline: keep the residual-network architecture, but choose a width axis that actually crosses the effective interpolation threshold.
 
-#### 5.3.1 Literal ResNet18 controlled comparison (closes a credibility gap)
+#### 5.3.1 DD-Recovery: fractional-$k$ ResNet as the corrected capacity axis
+
+The main neural-network result uses the fractional-$k$ ResNet described in Section 4.4. This architecture is not introduced to improve absolute accuracy; it is introduced to make the capacity axis scientifically usable at $n=4{,}000$. By allowing widths smaller than stock ResNet18, it spans the under-parameterized, near-threshold, and over-parameterized regimes in one sweep.
+
+![Figure 4a: Metric-audited fractional-$k$ ResNet DD-Recovery](figures/paper_final/fig1_main_valley_metric_audit.png)
+
+The original DD-Recovery sweep already showed the qualitative transition: underfitting at very small $k$, a sharp jump around $k=0.1875$, and recovery in the over-parameterized tail. The later metric audit strengthens the claim by separating the legacy best-over-epochs metric from the corrected final-epoch metric. In the final-epoch view, the independently reproduced A100 densification shows:
+
+| Regime | Representative $k$ | Final test accuracy | Interpretation |
+|---|---:|---:|---|
+| Underfit | 0.0625 | 23.8–25.7% | Too few features / parameters to fit the task |
+| Recovery onset | 0.1875–0.30 | 48.9–50.0% | Capacity begins to interpolate useful structure |
+| Valley | 0.4–0.6 | 46.7–47.6% | Over-parameterized training becomes unstable after memorization |
+| Recovery tail | 2.0 | 52.8–56.4% | Larger models recover generalization despite interpolation |
+
+The key methodological point is that the double-descent curve is only visible after two corrections: the architecture must cross the effective threshold, and the evaluation must not choose the best test checkpoint. With stock widths or best-test reporting, the valley looks artificially shallow or disappears; with fractional $k$ and final-epoch reporting, the rise-valley-recovery pattern is visible.
+
+#### 5.3.2 Literal ResNet18 controlled comparison (closes a credibility gap)
 
 **Origin.** He, Zhang, Ren, Sun (2016), "Deep Residual Learning for Image Recognition." *CVPR*. Plus Nakkiran et al. (2021) §4 used WideResNet-28-w varying width $w \in \{2, 4, 8, 16, 64\}$.
 
@@ -372,8 +419,6 @@ The variance spike at p/n = 1 is 3× larger with noise (consistent with theory: 
 
 ### 6.3 Experiment 7: Epoch-Wise Double Descent with SGD + ResNet
 
-*Note: This experiment runs on a GPU (RTX 4090). Results will be finalized after completion.*
-
 **Setup:**
 - Dataset: CIFAR-10, n = 4,000 training samples (20% label noise)
 - Architecture: ResNet with width multiplier k ∈ {1, 2, 4}, parameter counts p ∈ {175K, 697K, 2.8M}
@@ -403,8 +448,6 @@ Adam ResNet k=1/2/4: Virtually identical to SGD counterparts — ~0% train error
 **Key finding:** When **p >> n** (all our k values give p/n ∈ [44, 694] for n=4000), there is no epoch-wise double descent regardless of optimizer. The models immediately interpolate the training data (including noisy labels) and never exhibit the under-fitting → over-fitting → recovery transition. This contrasts sharply with Nakkiran et al.'s results because they used n=50,000 (full CIFAR-10), where p/n ≈ 3.5 for k=1 — close to the interpolation threshold. Our EMC experiment (Exp 8) confirms this analysis: EMC(T=50, k=1) ≈ 3,984 ≈ n, showing the model saturates in just 50 epochs regardless of training budget.
 
 ### 6.4 Experiment 8: Effective Model Complexity
-
-*Note: Runs after Experiment 7 on the same GPU.*
 
 **Setup:**
 - Binary search for EMC(T, k) over n ∈ [50, 4000] with 8 iterations each
@@ -554,7 +597,11 @@ Both optimisers collapse to sub-random test accuracy on noisy CIFAR-10 in this $
 
 ![Figure 15: Sample-wise NN DD — peak shifts right with n](figures/samplewise_nn_dd.png)
 
-**Results.** The per-$n$ best test-accuracy curves are:
+![Figure 15b: Final-epoch n-slice audit](figures/paper_final/fig2_sample_wise_second_descent.png)
+
+**Metric note.** This section was originally computed with best-over-epochs accuracy because the sample-wise campaign was designed before the final-vs-best audit. The qualitative conclusion survives under final-epoch evaluation: increasing $n$ pushes useful capacity to larger $k$, and the over-parameterized region shows the largest best-final gaps. Section 7.1 gives the corrected metric interpretation.
+
+**Results.** The per-$n$ best test-accuracy curves from the original sweep are:
 
 | $k$ | $n=1{,}000$ | $n=2{,}000$ | $n=4{,}000$ | $n=8{,}000$ |
 |---|---|---|---|---|
@@ -609,7 +656,7 @@ Two structural features appear simultaneously at $k = 0.1875$: features are *mos
 
 **Training-time complement.** Section~6.11.1 evaluates the **same** normalised stable rank **along the optimisation trajectory** (every 100 epochs) at $k \in \{0.125, 0.1875, 0.5\}$ on the §6.11 protocol: the spectrum co-evolves with test accuracy, and at epoch 2000 the cross-$k$ ordering above is recovered on this three-point grid — so §6.10’s width-wise phase transition and §6.11’s epoch-wise dynamics describe compatible slices of one mechanism.
 
-**Honest framing.** We use "DD-recovery onset" rather than "DD peak" to describe $k=0.1875$ in this paper. The headline trajectory at $n=4{,}000$ — best test accuracy $25.7\% \to 32.9\% \to 49.2\% \to 52.3\% \to 50.5\% \to 51.2\% \to 54.2\% \to 52.9\% \to 55.1\%$ across $k \in \{0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1.0, 2.0\}$ — is dominated by an under-fit$\rightarrow$recovery transition in the lower half of the $k$ grid. A genuine bias-variance "valley" appears between $k=0.375$ ($50.5\%$) and $k=0.5$ ($51.2\%$), a roughly $1$-$2$ pp dip relative to the $k=0.25$ ($52.3\%$) and $k=0.75$ ($54.2\%$) neighbours. The U-shape exists but is shallow; the dominant signal is the rapid recovery onset at $k=0.1875$, which is precisely where the spectral diagnostics localise the phase transition. We work in the noise-amplified regime (15% label noise) following Belkin et al. (2019) §3.2; without injected label noise the peak is much shallower or vanishes (Person B, §6.6).
+**Honest framing.** We use "DD-recovery onset" for $k=0.1875$ and "valley" for the later final-epoch dip around $k=0.4$–$0.6$. Before the metric audit, the best-test trajectory made the valley look shallow. After final-epoch re-aggregation and A100 densification, the story is cleaner: the lower-$k$ grid is dominated by underfit $\rightarrow$ recovery onset, while the mid-$k$ grid shows the unstable over-parameterized valley that best-over-epochs reporting had partially hidden. The spectral diagnostics localise the onset of useful feature geometry near $k=0.1875$; the final-epoch metric audit localises the generalization valley later, around $k=0.4$–$0.6$. These are compatible slices of the same pipeline, not competing claims. We work in the noise-amplified regime (15% label noise) following Belkin et al. (2019) §3.2; without injected label noise the peak is much shallower or vanishes (Person B, §6.6).
 
 #### 6.10.1 Full empirical-NTK confirmation (Z. Li)
 
@@ -634,7 +681,7 @@ The condition number at $k=0.1875$ is ~30× the value at $k=0.125$ and ~7× the 
 
 #### 6.10.2 Full empirical-NTK at converged budget — phase transition spans k ∈ [0.125, 0.25]
 
-**Setup.** Same architecture and hyperparameters as §6.10.1, but tightened: $n=2{,}000$, 800 epochs, 32 NTK samples × 10 logits, full Jacobian over all parameters via $\texttt{torch.func.jacrev}$. We ran the partial sweep $k \in \{0.0625, 0.125, 0.1875, 0.25\}$ before the campaign deadline (the larger-$k$ runs at $k \in \{0.5, 0.75, 1, 2\}$ were left running and will be folded into the paper version).
+**Setup.** Same architecture and hyperparameters as §6.10.1, but tightened: $n=2{,}000$, 800 epochs, 32 NTK samples × 10 logits, full Jacobian over all parameters via $\texttt{torch.func.jacrev}$. We completed the partial sweep $k \in \{0.0625, 0.125, 0.1875, 0.25\}$ before the compute deadline; the larger-$k$ runs are treated as future verification rather than as evidence for the current report.
 
 ![Figure 18b: Tight full empirical-NTK Gram diagnostics versus $k$](figures/full_empirical_ntk_tight.png)
 
@@ -778,15 +825,20 @@ All five diagnostics localize the phase transition to $k \in [0.125, 0.25]$, wit
 
 ### 7.1 Key Findings
 
-Our experiments demonstrate double descent clearly in kernel methods (RFF) and partially in neural networks (CNN). The RFF experiments produce textbook results because:
-1. The solver computes the **exact** minimum-norm solution (no optimization dynamics)
-2. The interpolation threshold is **precisely defined** ($p = n$)
-3. The feature space is **fixed** (no feature learning)
+The full pipeline has one central lesson: double descent is not just a curve you get by "making the model bigger." It appears when the experimental axis crosses the **effective interpolation threshold**, and it can be hidden by both architectural scale and evaluation protocol.
 
-Neural networks add complexity because:
-1. Adam/SGD provides **implicit regularization** beyond just minimum-norm
-2. The **effective parameterization** differs from the raw parameter count
-3. **Feature learning** changes the NTK during training (rich vs. lazy regime)
+1. **RFF gives the clean reference case.** The solver computes the exact minimum-norm interpolator, the feature space is fixed, and the threshold is exactly $p=n$. That is why the RFF results show textbook model-wise and sample-wise DD.
+2. **Naive neural-network sweeps fail for a reason.** Small CNNs under noisy CIFAR-10 can memorize and collapse; stock ResNet18 starts far beyond the threshold at $n=4{,}000$. These negative results are not embarrassing side quests — they explain why raw parameter count is a bad capacity axis.
+3. **Fractional $k$ repairs the capacity axis.** The custom ResNet family makes width continuous enough to pass from underfitting to interpolation to over-parameterized recovery. This is the neural-network analogue of sweeping $p/n$ in RFF.
+4. **The metric audit repairs the evaluation axis.** Reporting `best_test_acc = max_t test_acc(t)` selects a checkpoint using the test set. The audit shows that this bias is not uniform: it is concentrated in the over-parameterized valley, where training is least stable.
+
+![Metric audit: final-vs-best test accuracy](figures/paper_final/fig1_main_valley_metric_audit.png)
+
+With final-epoch evaluation, the main $n=4{,}000$ sweep has a deeper valley around $k=0.4$–$0.6$ and recovers at larger $k$. The best-over-epochs curve is still useful as a diagnostic of training instability, but it should not be the headline generalization metric. This is why the final paper frames the NN result as **architecture + metric corrected DD-Recovery**, not simply "a ResNet width sweep."
+
+![Metric audit: Bartlett-style vacuity under final-vs-best calibration](figures/paper_final/fig3_bartlett_vacuity.png)
+
+The same correction also affects theory diagnostics that use observed risk as a calibration target. The Bartlett-style effective-rank quantities remain useful as representation-complexity diagnostics, but their vacuity ratios should be calibrated to final-epoch risk. This keeps the bound discussion aligned with the same evaluation protocol as the empirical DD claim.
 
 ### 7.2 Connection to Course Material
 
@@ -807,46 +859,41 @@ Label noise plays a critical role in double descent:
 
 ### 7.4 Limitations
 
-1. **Computational constraints on literal Nakkiran reproduction.** Our NN experiments use $n = 4{,}000$ rather than the full CIFAR-10. With a stock ResNet-18 this places every width far in the over-parameterised regime ($p/n \geq 44$) and produces no model-wise peak (Exp A). The DD-Recovery campaign on a custom fractional-$k$ ResNet recovers the phenomenon at the same $n$ by spanning the interpolation threshold from below; a literal ResNet-18 reproduction at $n = 50{,}000$ remains future work.
+1. **Computational constraints on literal Nakkiran reproduction.** Our NN experiments use $n = 4{,}000$ rather than full CIFAR-10. A stock ResNet18 is already far into the over-parameterized tail in this regime, so our fractional-$k$ family is a methodological adaptation rather than a literal reproduction of Nakkiran et al.'s WideResNet setup.
 
-2. **NN-side mechanism diagnostics.** The RFF story is supported by an explicit condition-number analysis (Exp 7) and bias-variance decomposition (Exp 6). The CNN side has the analogous *outcome* (Sections 5.3, 6.7) but no comparable Jacobian / effective-rank diagnostic. Adding a Jacobian condition number trace to the Person C runs is a natural next step.
+2. **Final-vs-best audit coverage.** The audit strongly changes the interpretation of the $n=4{,}000$ valley and the Bartlett calibration, but not every auxiliary sweep has equal seed density under the corrected metric. We therefore use final-epoch accuracy for headline claims and treat best-test accuracy as a diagnostic rather than a replacement for more seeds.
 
-3. **Single-architecture optimiser comparison.** The Adam-vs-SGD comparison (Section 6.7) uses one CNN family. Whether the optimiser-driven divergence persists for ResNet-18 or for transformer-style architectures was out of scope.
+3. **EMC saturation.** The EMC binary search saturates near the maximum tested $n=4{,}000$ for $k \in \{1,2,4\}$ at 20% noise. This supports the claim that those models are too powerful for the dataset scale, but it does not localize the EMC threshold. Smaller $k$, lower noise, or larger $n$ would be needed for a sharper EMC curve.
 
----
+4. **Spectral diagnostics are empirical witnesses, not new theorems.** The penultimate-feature spectrum, empirical NTK, Bartlett-style effective-rank proxy, and Hessian top eigenvalue all point to the same transition region, but only the RFF side has a clean closed-form theory. The NN-side measurements should be read as mechanistic evidence rather than theorem-certified bounds.
 
-## 9. Conclusion and Future Work
-
-### 9.1 Conclusion
-
-We have empirically demonstrated the double descent phenomenon across eight experiments spanning model-wise, sample-wise, and epoch-wise axes. Our key findings:
-
-**RFF on MNIST (Experiments 1–6):**
-- Test MSE spikes up to **129×** at the interpolation threshold ($p/n = 1$), amplified by label noise
-- **Robustness confirmed** across 5 random seeds: noise ordering is preserved, though the peak magnitude varies substantially between seeds
-- **Variance drives the peak**: bias-variance decomposition shows variance increases by 3–5 orders of magnitude at $p/n = 1$ while bias decreases monotonically. Over-parameterization brings variance back down via the minimum-norm solution's implicit $\ell_2$ regularization
-
-**ResNet on CIFAR-10 (Experiments 7–8):**
-- All models (k=1,2,4) immediately memorize all 4000 noisy training samples within 50 epochs — confirmed by EMC ≈ n for all (k, T) combinations
-- **No epoch-wise DD** occurs because n < EMC for our entire training set: the models are always in the over-parameterized regime, with no under-fitting → over-fitting transition during training
-- **EMC is dataset-scale dependent**: Nakkiran et al.'s experiment works because with n=50,000, their ResNet has p/n ≈ 3.5 near the threshold. Our n=4000 gives p/n ∈ [44, 694], too far from the threshold
-- **SGD vs. Adam**: No meaningful difference in the fully over-parameterized regime — both optimizers produce the same catastrophic memorization
-
-These results directly validate theoretical predictions from EECS 6699: the classical bias-variance tradeoff (Lectures 2–3) describes only the pre-threshold regime; variance explosion at interpolation (Lectures 7–8) explains the peak; implicit regularization in the over-parameterized regime (Lectures 5–6) explains the recovery for RFF but fails for NN with noisy labels.
-
-### 9.2 Future Work
-
-The Person A (ridge) and Person C (Adam vs SGD) extensions in this report close two of the gaps identified earlier in the project. The natural next steps are:
-
-1. **Ridge regularisation on neural networks.** Section 6.5 confirms ridge smooths the RFF peak; the analogous CNN experiment (weight decay sweep co-varied with noise) would test whether the same mechanism applies to learnable features.
-2. **Jacobian / effective-rank diagnostics for CNN.** The RFF story has an empirical condition-number trace (Exp 7); the CNN story does not. Recording $\kappa(J^\top J)$ for the network Jacobian along training would give the NN side a comparable mechanism plot.
-3. **Sample-wise NN double descent.** Sections 5.2 and 6.6 study the sample axis only for RFF. Sweeping $n$ at a fixed CNN width would test whether "more data can hurt" persists when features are learned rather than fixed.
-4. **Architecture sweep across families.** MLP / CNN / ResNet / Transformer at matched parameter counts, all under the same noise and optimiser, would test the architecture-independence claim implicit in much of the literature.
-5. **Effective Model Complexity for NN.** Exp 8 shows EMC saturates at $n$ for our (k, T) grid. Sweeping at much larger $n$ (or much smaller $k$) is needed to make EMC informative for the CNN regime.
+5. **Some ablations remain shallow.** Activation and depth ablations are useful sanity checks, but they use limited seeds and do not sweep the full $k$ grid. They support robustness of the pipeline; they do not settle architecture-independence in general.
 
 ---
 
-## 10. References
+## 8. Conclusion and Future Work
+
+### 8.1 Conclusion
+
+We have empirically demonstrated double descent as a full experimental pipeline rather than as a single plot. The RFF experiments give the clean theory-aligned baseline: test MSE spikes at $p/n=1$, label noise amplifies the spike, ridge regularization smooths it, and bias-variance decomposition identifies variance as the driver. The neural-network experiments show why the same phenomenon is harder to see in deep models: raw parameter count is not the right capacity axis, stock architectures can start far beyond the threshold, and optimizer choice is secondary once the model is already deep in the over-parameterized regime.
+
+The main NN contribution is the fractional-$k$ ResNet DD-Recovery campaign. By making width small and continuous enough, the model family crosses the effective interpolation threshold at $n=4{,}000$ and shows underfitting, a final-epoch valley, and over-parameterized recovery. The sample-wise sweep, penultimate-feature spectrum, empirical NTK, Bartlett-style proxy, epoch-wise dynamics, depth ablation, and Hessian diagnostic all support the same interpretation: the interesting transition is around the effective-complexity threshold, not around raw parameter count alone.
+
+The final methodological contribution is the metric audit. We found that `best_test_acc` reporting hides part of the valley by selecting the best test checkpoint. Re-aggregating with `final_test_acc` makes the double-descent story more honest and, in the main sweep, stronger. This turns the report's pipeline into a reproducible argument: reproduce the kernel phenomenon, diagnose its mechanism, design a neural architecture that crosses the right threshold, audit the metric, and then interpret the NN transition through spectral and EMC-style diagnostics.
+
+### 8.2 Future Work
+
+The natural next steps are:
+
+1. **Localize EMC instead of saturating it.** Re-run EMC with smaller $k$, lower label noise, and/or larger $n$ so the threshold is actually bracketed rather than hitting the $n=4{,}000$ ceiling.
+2. **Weight decay / ridge analogues for neural networks.** The RFF ridge sweep shows the clean regularization mechanism; a neural weight-decay sweep would test whether the over-parameterized valley can be smoothed in learned-feature models.
+3. **More seeds in the audited valley.** The final-vs-best gap is largest around $k=0.4$–$0.6$. Additional seeds there would turn the metric-audit claim from strong evidence into a cleaner statistical statement.
+4. **Broader architecture families.** MLP, CNN, ResNet, and transformer-style models at matched effective complexity would test whether fractional-width DD-Recovery is a ResNet-specific convenience or a general neural-network phenomenon.
+5. **Tighter theory for trained features.** The Bartlett-style and NTK diagnostics are useful witnesses, but a theorem for the trained fractional-$k$ feature map would move the project from empirical anatomy toward theory.
+
+---
+
+## 9. References
 
 1. Bartlett, P. L., Foster, D. J., & Telgarsky, M. J. (2017). Spectrally-normalized margin bounds for neural networks. *NeurIPS*.
 
@@ -892,7 +939,12 @@ double-descent/
 │   ├── trainer.py                # Generic training loop with metric logging
 │   ├── plotting.py               # Visualization utilities
 │   └── experiments/
-│       └── comprehensive_dd.py   # Main experiment suite (4 experiments)
+│       ├── comprehensive_dd.py   # Original RFF + CNN experiment suite
+│       ├── exp_dd_recovery.py    # Fractional-k ResNet DD-Recovery
+│       ├── shufeng_experiments.py # Noise, bias-variance, SGD/Adam, EMC
+│       ├── exp_samplewise_nn.py  # NN sample-wise sweep
+│       ├── exp_nn_spectral.py    # Penultimate-feature spectrum
+│       └── exp_bartlett_bound_eval.py # Bartlett-style diagnostic
 ├── notebooks/
 │   └── analysis.ipynb            # Interactive analysis with math discussion
 ├── results/                      # JSON results + auto-generated plots
@@ -916,6 +968,14 @@ PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "1,
 
 # Full: Include neural network experiments (~3-4 hours on GPU)
 PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
+
+# Fractional-k DD-Recovery pipeline
+python3 src/experiments/exp_dd_recovery.py --mode smoke
+python3 src/experiments/exp_dd_recovery.py --mode main
+python3 src/experiments/exp_dd_recovery.py --mode nslice
+
+# Audit-safe Bartlett diagnostic
+python3 -m src.experiments.exp_bartlett_bound_eval --metric final_test_acc
 
 # 3. Open the analysis notebook
 jupyter notebook notebooks/analysis.ipynb
