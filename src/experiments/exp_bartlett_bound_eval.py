@@ -76,15 +76,21 @@ def mean_by_k(rows, key):
     return {k: sum(v) / len(v) for k, v in buckets.items()}
 
 
-def get_dd_accuracy_by_k(dd_rows):
-    """Use best_test_acc if available, otherwise final/test_acc."""
+def get_dd_accuracy_by_k(dd_rows, metric_pref="final_test_acc"):
+    """Aggregate per-k DD accuracy. Default prefers final_test_acc to avoid
+    test-set selection bias from max-over-epochs (audit 2026-05-05).
+    Pass metric_pref="best_test_acc" for legacy comparison."""
     out = {}
     for r in dd_rows:
         k = float(r["k"])
-        if "best_test_acc" in r:
-            acc = float(r["best_test_acc"])
+        # Honor caller's preference if available
+        if metric_pref in r:
+            acc = float(r[metric_pref])
+        # Fallbacks
         elif "final_test_acc" in r:
             acc = float(r["final_test_acc"])
+        elif "best_test_acc" in r:
+            acc = float(r["best_test_acc"])
         elif "test_acc" in r:
             acc = float(r["test_acc"])
         else:
@@ -252,6 +258,12 @@ def main():
         default=0.125,
         help="k used to scale proxy curves to observed risk. Use -1 for least-squares calibration.",
     )
+    p.add_argument(
+        "--metric",
+        default="final_test_acc",
+        choices=["final_test_acc", "best_test_acc"],
+        help="Which DD metric to use as observed risk. Default: final_test_acc (post-audit 2026-05-05). Use best_test_acc for legacy.",
+    )
     args = p.parse_args()
 
     spectral = load_json(args.spectral_summary)
@@ -259,7 +271,7 @@ def main():
 
     rows = [spectral_record_to_metrics(r) for r in spectral]
 
-    dd_acc = get_dd_accuracy_by_k(dd)
+    dd_acc = get_dd_accuracy_by_k(dd, metric_pref=args.metric)
     for r in rows:
         k = r["k"]
         # Prefer DD-Recovery best test acc if matching k exists; otherwise use spectral test acc.
