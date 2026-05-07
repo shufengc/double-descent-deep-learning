@@ -787,7 +787,7 @@ Two consistent patterns emerge:
 
 #### 6.12.1 Activation-axis sanity check at the recovery onset
 
-**Motivation.** A branch audit found one useful leftover result from the `Yusheng` branch: an activation-function ablation at the DD-recovery onset. This is not a new full $k$-sweep; it asks a narrower robustness question. If the recovery point at $k=0.1875$ only worked for ReLU, then the fractional-$k$ story would be more architecture-specific than the main report suggests.
+**Motivation.** We add an activation-function ablation at the DD-recovery onset. This is not a new full $k$-sweep; it asks a narrower robustness question. If the recovery point at $k=0.1875$ only worked for ReLU, then the fractional-$k$ story would be more architecture-specific than the main report suggests.
 
 **Setup.** We hold the DD-Recovery protocol fixed at $k=0.1875$, $n=4{,}000$, 15% label noise, Adam with $\text{lr}=10^{-4}$, 1,500 epochs, and 2 seeds. The model has the same widths $(3,6,12)$ and $6{,}505$ parameters for all activations; only the block nonlinearity changes across ReLU, GELU, and Tanh.
 
