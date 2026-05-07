@@ -1,0 +1,6 @@
+witness,pearson_r,p_value_approx,n_shared_k,shared_k
+bartlett_r,0.0982,0.9215,3,0.0625|0.5|2
+ntk_kappa,nan,nan,1,
+hessian_per_p,0.9925,0.0053,3,0.0625|0.5|2
+stable_rank,0.0982,0.9215,3,0.0625|0.5|2
+participation,0.2157,0.8265,3,0.0625|0.5|2
