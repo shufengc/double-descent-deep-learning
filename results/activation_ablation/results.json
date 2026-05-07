@@ -1,0 +1,116 @@
+[
+  {
+    "activation": "relu",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 42,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 48.09,
+    "best_epoch": 1500,
+    "final_test_acc": 48.09,
+    "final_train_acc": 46.5,
+    "memorization_frac": 0.08247422680412371,
+    "effective_rank": 10.313575032085572,
+    "wallclock_min": 21.63365739583969
+  },
+  {
+    "activation": "relu",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 7,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 48.48,
+    "best_epoch": 1400,
+    "final_test_acc": 48.28,
+    "final_train_acc": 47.925,
+    "memorization_frac": 0.09060955518945635,
+    "effective_rank": 9.911390989141282,
+    "wallclock_min": 21.67477508385976
+  },
+  {
+    "activation": "gelu",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 42,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 48.82,
+    "best_epoch": 1500,
+    "final_test_acc": 48.82,
+    "final_train_acc": 48.025,
+    "memorization_frac": 0.0979381443298969,
+    "effective_rank": 10.034674526783933,
+    "wallclock_min": 21.822328384717306
+  },
+  {
+    "activation": "gelu",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 7,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 50.94,
+    "best_epoch": 1500,
+    "final_test_acc": 50.94,
+    "final_train_acc": 49.825,
+    "memorization_frac": 0.10543657331136738,
+    "effective_rank": 9.21424425264744,
+    "wallclock_min": 21.709057648976643
+  },
+  {
+    "activation": "tanh",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 42,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 47.36,
+    "best_epoch": 1500,
+    "final_test_acc": 47.36,
+    "final_train_acc": 45.875,
+    "memorization_frac": 0.07731958762886598,
+    "effective_rank": 2.5878974369687353,
+    "wallclock_min": 21.664564001560212
+  },
+  {
+    "activation": "tanh",
+    "k": 0.1875,
+    "n": 4000,
+    "seed": 7,
+    "params": 6505,
+    "widths": [
+      3,
+      6,
+      12
+    ],
+    "best_test_acc": 44.94,
+    "best_epoch": 1500,
+    "final_test_acc": 44.94,
+    "final_train_acc": 44.3,
+    "memorization_frac": 0.08237232289950576,
+    "effective_rank": 2.466277537779399,
+    "wallclock_min": 22.000478013356528
+  }
+]

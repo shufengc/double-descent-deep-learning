@@ -205,7 +205,7 @@ We therefore organise the work into two layers: a **Reproduction** layer (Experi
 | 6.6 — Person B | Label noise | How does the peak amplify as noise rate grows from 0% to 40%? |
 | 6.7 — Person C | Optimiser & implicit bias | Why does Adam + noisy CIFAR-10 memorise without recovery while SGD does not? |
 | 6.8 — Person D | Generalisation theory | Why do classical VC / Rademacher bounds completely fail to predict the second descent? |
-| 6.9–6.13 | NN mechanism | Do sample-wise shifts, feature spectra, training dynamics, depth, and Hessian sharpness agree on the same transition? |
+| 6.9–6.13 | NN mechanism | Do sample-wise shifts, feature spectra, training dynamics, depth/activation ablations, and Hessian sharpness agree on the same transition? |
 | 7.1 | Metric audit | Does `best_test_acc` reporting hide or exaggerate the DD valley? |
 
 ### 4.2 Experiment 1–2: Random Fourier Features
@@ -785,6 +785,22 @@ Two consistent patterns emerge:
 
 **Limit.** We test depth 2 vs 4 at a single $k$. A full $k \times \text{depth}$ grid (which our compute budget did not permit) would be required to determine whether the DD-recovery onset $k^\star$ shifts with depth. Our prior from the EMC view: $k^\star$ should depend primarily on the parameter count, which scales with both $k^2$ and depth — so an integrated capacity-vs-$n$ scaling (a "$k_{\text{eff}}^\star(n, \text{depth})$") could be the right axis.
 
+#### 6.12.1 Activation-axis sanity check at the recovery onset
+
+**Motivation.** A branch audit found one useful leftover result from the `Yusheng` branch: an activation-function ablation at the DD-recovery onset. This is not a new full $k$-sweep; it asks a narrower robustness question. If the recovery point at $k=0.1875$ only worked for ReLU, then the fractional-$k$ story would be more architecture-specific than the main report suggests.
+
+**Setup.** We hold the DD-Recovery protocol fixed at $k=0.1875$, $n=4{,}000$, 15% label noise, Adam with $\text{lr}=10^{-4}$, 1,500 epochs, and 2 seeds. The model has the same widths $(3,6,12)$ and $6{,}505$ parameters for all activations; only the block nonlinearity changes across ReLU, GELU, and Tanh.
+
+![Figure 19b: Activation ablation at the DD-recovery onset](results/activation_ablation/dd_curves.png)
+
+| Activation | Final test acc (2-seed mean) | Best test acc (2-seed mean) | Best-final gap | Effective rank |
+|---|---:|---:|---:|---:|
+| ReLU | 48.19% | 48.28% | 0.10 pp | 10.11 |
+| GELU | **49.88%** | **49.88%** | 0.00 pp | 9.62 |
+| Tanh | 46.15% | 46.15% | 0.00 pp | 2.53 |
+
+**Takeaway.** ReLU and GELU both land in the same recovery band as the main $k=0.1875$ result, and the best-vs-final gap is essentially absent at this threshold point. Tanh is weaker and has much lower effective rank, which is expected from saturation, but it still does not collapse to the underfit $k=0.125$ regime. This supports the report's narrower claim: the DD-Recovery onset is mainly about crossing an effective-complexity threshold, not about a single lucky ReLU implementation. It is still a sanity check rather than architecture-independence proof, because we do not sweep the full $k$ grid for each activation.
+
 ### 6.13 Hessian top eigenvalue: sharpness aligns with the spectral phase transition
 
 **Origin.** Yao, Gholami, Keutzer, Mahoney (2020), "PyHessian: Neural networks through the lens of the Hessian." *IEEE Big Data*. Plus Foret, Kleiner, Mobahi, Neyshabur (2021), "Sharpness-Aware Minimization for Efficiently Improving Generalization." *ICLR*. The top eigenvalue of $\nabla^2_\theta \mathcal{L}$ is a standard probe for loss-landscape sharpness near a trained minimum.
@@ -877,7 +893,7 @@ Label noise plays a critical role in double descent:
 
 We have empirically demonstrated double descent as a full experimental pipeline rather than as a single plot. The RFF experiments give the clean theory-aligned baseline: test MSE spikes at $p/n=1$, label noise amplifies the spike, ridge regularization smooths it, and bias-variance decomposition identifies variance as the driver. The neural-network experiments show why the same phenomenon is harder to see in deep models: raw parameter count is not the right capacity axis, stock architectures can start far beyond the threshold, and optimizer choice is secondary once the model is already deep in the over-parameterized regime.
 
-The main NN contribution is the fractional-$k$ ResNet DD-Recovery campaign. By making width small and continuous enough, the model family crosses the effective interpolation threshold at $n=4{,}000$ and shows underfitting, a final-epoch valley, and over-parameterized recovery. The sample-wise sweep, penultimate-feature spectrum, empirical NTK, Bartlett-style proxy, epoch-wise dynamics, depth ablation, and Hessian diagnostic all support the same interpretation: the interesting transition is around the effective-complexity threshold, not around raw parameter count alone.
+The main NN contribution is the fractional-$k$ ResNet DD-Recovery campaign. By making width small and continuous enough, the model family crosses the effective interpolation threshold at $n=4{,}000$ and shows underfitting, a final-epoch valley, and over-parameterized recovery. The sample-wise sweep, penultimate-feature spectrum, empirical NTK, Bartlett-style proxy, epoch-wise dynamics, depth/activation ablations, and Hessian diagnostic all support the same interpretation: the interesting transition is around the effective-complexity threshold, not around raw parameter count alone.
 
 The final methodological contribution is the metric audit. We found that `best_test_acc` reporting hides part of the valley by selecting the best test checkpoint. Re-aggregating with `final_test_acc` makes the double-descent story more honest and, in the main sweep, stronger. This turns the report's pipeline into a reproducible argument: reproduce the kernel phenomenon, diagnose its mechanism, design a neural architecture that crosses the right threshold, audit the metric, and then interpret the NN transition through spectral and EMC-style diagnostics.
 

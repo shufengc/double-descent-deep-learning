@@ -72,6 +72,7 @@ We use two complementary approaches:
 │   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
 │   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
 │   └── dd_recovery_5090_focused/     # DD Recovery: fractional-k 29-run campaign (04-28)
+│   └── activation_ablation/          # Activation sanity check at DD-recovery onset
 │   └── personA_ridge_sweep/          # Person A (solo, 04-30): RFF ridge λ sweep
 │   └── personB_noise_sweep/          # Person B (solo, 04-30): RFF noise 0–40%
 │   └── personC_optimizer/            # Person C (solo, 04-30): CNN Adam vs SGD on 5090
@@ -111,6 +112,9 @@ python3 src/experiments/exp_dd_recovery.py --mode nslice     # n=8000 comparison
 
 # Regenerate DD recovery figures from local results
 python3 src/experiments/plot_dd_recovery.py
+
+# Activation ablation at the DD-recovery onset (k=0.1875; 6 GPU runs)
+python3 -m src.experiments.exp_activation_ablation --device cuda
 
 # === Solo extensions (shufeng branch, Apr 30) — see report §6.5–§6.8 ===
 
