@@ -628,7 +628,7 @@ Three observations are consistent with sample-wise double descent theory:
 
 **Setup.** For each $k \in \{0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1.0, 2.0\}$, we train the fractional-$k$ ResNet on the DD-Recovery configuration ($n = 4{,}000$, 15% label noise, Adam, $\text{lr} = 10^{-4}$, 500 epochs as a faster-converging variant of the §5.3 protocol) and collect $Z$ on $N = 2{,}048$ test images. From the centred singular spectrum we report three diagnostics. Because the feature dimension $c_3 = \max(1, \mathrm{round}(64k))$ varies with $k$ — from $c_3=4$ at $k=0.0625$ to $c_3=128$ at $k=2$ — we report the *normalised* stable rank $\|Z_c\|_F^2/(\|Z_c\|_{\text{op}}^2 \cdot c_3)$ (the fraction of feature dimensions effectively spanned), the condition number $\sigma_{\max}/\sigma_{\min}$, and the normalised Renyi-2 participation ratio $(\sum\lambda_i)^2/(\sum\lambda_i^2 \cdot c_3)$ where $\lambda_i = \sigma_i^2$.
 
-![Figure 17: NN penultimate-feature spectral signature versus $k$](figures/nn_effective_rank_vs_k.png)
+![Figure 16: NN penultimate-feature spectral signature versus $k$](figures/nn_effective_rank_vs_k.png)
 
 **Results.** All three diagnostics show a clear local extremum at $k = 0.1875$, exactly the DD-recovery onset.
 
@@ -664,7 +664,7 @@ Two structural features appear simultaneously at $k = 0.1875$: features are *mos
 
 **Setup (Z. Li, contributed).** Quick verification at $k \in \{0.125, 0.1875, 0.25, 0.5\}$, $n=1{,}000$, 15% noise, 200 epochs, NTK computed on $N=12$ test samples × 10 logits via $\texttt{torch.func.jacrev}$ over all model parameters. Diagnostics on the $12{\times}12$ NTK Gram: trace, top eigenvalue, condition number, stable rank.
 
-![Figure 18: Full empirical-NTK Gram diagnostics versus $k$ (Z. Li, 4 widths)](figures/full_empirical_ntk_quick.png)
+![Figure 17: Full empirical-NTK Gram diagnostics versus $k$ (Z. Li, 4 widths)](figures/full_empirical_ntk_quick.png)
 
 **Result.** The Gram matrix exhibits a sharp irregularity at exactly $k=0.1875$:
 
@@ -683,7 +683,7 @@ The condition number at $k=0.1875$ is ~30× the value at $k=0.125$ and ~7× the 
 
 **Setup.** Same architecture and hyperparameters as §6.10.1, but tightened: $n=2{,}000$, 800 epochs, 32 NTK samples × 10 logits, full Jacobian over all parameters via $\texttt{torch.func.jacrev}$. We completed the partial sweep $k \in \{0.0625, 0.125, 0.1875, 0.25\}$ before the compute deadline; the larger-$k$ runs are treated as future verification rather than as evidence for the current report.
 
-![Figure 18b: Tight full empirical-NTK Gram diagnostics versus $k$](figures/full_empirical_ntk_tight.png)
+![Figure 17b: Tight full empirical-NTK Gram diagnostics versus $k$](figures/full_empirical_ntk_tight.png)
 
 **Result.** With converged training, the spectral phase transition is somewhat differently localised than in the §6.10.1 quick run:
 
@@ -714,9 +714,9 @@ Three observations:
 
 We report $\Delta = \text{best test acc} - \text{final test acc}$. A **positive** $\Delta$ means stopping at the validation-optimal epoch would have improved test accuracy relative to training to completion; a **negative** $\Delta$ means test accuracy continued to improve after the validation-optimal epoch (validation/test mismatch).
 
-![Figure 16: Fractional-$k$ epoch-wise dynamics and early-stop gap](figures/fractionalk_epochwise.png)
+![Figure 18: Fractional-$k$ epoch-wise dynamics and early-stop gap](figures/fractionalk_epochwise.png)
 
-Figure~16 (left: test accuracy vs epoch with validation-best markers; right: seed-averaged best vs final test accuracy) summarises the early-stop geometry for an epoch-only export. The seed-resolved numbers below come from the rerun that also logs train-time spectra (Figure~16b, §6.11.1).
+Figure~18 (left: test accuracy vs epoch with validation-best markers; right: seed-averaged best vs final test accuracy) summarises the early-stop geometry for an epoch-only export. The seed-resolved numbers below come from the rerun that also logs train-time spectra (Figure~18b, §6.11.1).
 
 **Results.**
 
@@ -740,11 +740,11 @@ Three consistent patterns emerge:
 
 **Motivation.** Section~6.10 fixes $k$ after training and compares **end-of-training** penultimate spectra across widths. Here we ask how the same §6.10 diagnostic evolves **during** optimisation at the three focal widths used in §6.11, holding the DD-Recovery protocol fixed.
 
-**Setup.** Identical to §6.11 (including the $10\%$ validation split). Every $100$ epochs (and at epoch 2000), we form the centred feature matrix $Z_c \in \mathbb{R}^{N \times c_3}$ from $N=2{,}048$ **test** inputs (same convention as §6.10) and record the normalised stable rank $\|Z_c\|_F^2 / (\|Z_c\|_{\mathrm{op}}^2 \cdot c_3)$, matching Figure~17’s vertical-axis convention.
+**Setup.** Identical to §6.11 (including the $10\%$ validation split). Every $100$ epochs (and at epoch 2000), we form the centred feature matrix $Z_c \in \mathbb{R}^{N \times c_3}$ from $N=2{,}048$ **test** inputs (same convention as §6.10) and record the normalised stable rank $\|Z_c\|_F^2 / (\|Z_c\|_{\mathrm{op}}^2 \cdot c_3)$, matching Figure~16’s vertical-axis convention.
 
-![Figure 16b: Train-time normalised stable rank and test accuracy — fractional-$k$ protocol ($n=4{,}000$, 15\% noise, two seeds per $k$)](figures/fractionalk_epochwise_spectral.png)
+![Figure 18b: Train-time normalised stable rank and test accuracy — fractional-$k$ protocol ($n=4{,}000$, 15\% noise, two seeds per $k$)](figures/fractionalk_epochwise_spectral.png)
 
-**Qualitative trajectories (Figure~16b, left).** For every $(k,\text{seed})$, the normalised stable rank **rises** over training from epoch $100$ to $2000$: mass spreads across singular directions as features adapt. Ordering by $k$ at late times differs from the cross-sectional §6.10 ordering at a **fixed** epoch budget: here $k=0.1875$ ends with the **largest** $\mathrm{eff\_rank}/c_3$ ($\approx 0.232$–$0.239$), while $k=0.5$ ends **lower** ($\approx 0.140$–$0.145$) despite higher test accuracy — the wide model occupies a **larger** raw penultimate space ($c_3=32$) but uses a **smaller fraction** of it, echoing the §6.10 interpretation that past the recovery onset, capacity grows faster than the effective dimension used. The small-$k$ curve ($k=0.125$, $c_3=8$) sits between the two.
+**Qualitative trajectories (Figure~18b, left).** For every $(k,\text{seed})$, the normalised stable rank **rises** over training from epoch $100$ to $2000$: mass spreads across singular directions as features adapt. Ordering by $k$ at late times differs from the cross-sectional §6.10 ordering at a **fixed** epoch budget: here $k=0.1875$ ends with the **largest** $\mathrm{eff\_rank}/c_3$ ($\approx 0.232$–$0.239$), while $k=0.5$ ends **lower** ($\approx 0.140$–$0.145$) despite higher test accuracy — the wide model occupies a **larger** raw penultimate space ($c_3=32$) but uses a **smaller fraction** of it, echoing the §6.10 interpretation that past the recovery onset, capacity grows faster than the effective dimension used. The small-$k$ curve ($k=0.125$, $c_3=8$) sits between the two.
 
 **Endpoints (epoch 2000, test features).**
 

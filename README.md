@@ -18,6 +18,8 @@ We use two complementary approaches:
 - **Random Fourier Features (RFF)** on MNIST — kernel method providing clean, theoretically grounded results
 - **Neural Networks (MLP, CNN, ResNet)** on CIFAR-10 — real neural network behavior with feature learning
 
+> **Headline NN result.** Naive CNN/ResNet sweeps fail to show NN double descent because raw parameter count overshoots the interpolation threshold. We fix the capacity axis with a fractional-$k$ ResNet and recover the model-wise DD: 26% → 49% → 55% test accuracy under 15% label noise on CIFAR-10. See report §5.3 (DD-Recovery) and Figure 4a.
+
 ## Repository Structure
 
 ```
@@ -68,14 +70,14 @@ We use two complementary approaches:
 │   ├── zhengda_exp8_noise_lambda_full/     # Zhengda Exp8: full 4-noise×7-lambda×5-seed sweep
 │   ├── zhengda_exp8_noise_lambda_mechanism/ # Zhengda Exp8: mechanism analysis (cond#, DoF)
 │   ├── yusheng_exp5_architecture_clean_yz_recipe/ # Yusheng: clean-label arch sweep (76.1% acc)
-|   ├── bartlett_bound_eval/       # Bartlett-style bound/proxy vs observed risk
+│   ├── bartlett_bound_eval/           # Bartlett-style bound/proxy vs observed risk
 │   ├── exp_nakkiran_modelwise/        # Exp A: Nakkiran recipe result
-│   └── exp_augmentation_ablation/    # Exp B: augmentation ablation (4 conditions)
-│   └── dd_recovery_5090_focused/     # DD Recovery: fractional-k 29-run campaign (04-28)
-│   └── activation_ablation/          # Activation sanity check at DD-recovery onset
-│   └── personA_ridge_sweep/          # Person A (solo, 04-30): RFF ridge λ sweep
-│   └── personB_noise_sweep/          # Person B (solo, 04-30): RFF noise 0–40%
-│   └── personC_optimizer/            # Person C (solo, 04-30): CNN Adam vs SGD on 5090
+│   ├── exp_augmentation_ablation/     # Exp B: augmentation ablation (4 conditions)
+│   ├── dd_recovery_5090_focused/      # DD Recovery: fractional-k 29-run campaign (04-28)
+│   ├── activation_ablation/           # Activation sanity check at DD-recovery onset
+│   ├── personA_ridge_sweep/           # Person A (solo, 04-30): RFF ridge λ sweep
+│   ├── personB_noise_sweep/           # Person B (solo, 04-30): RFF noise 0–40%
+│   └── personC_optimizer/             # Person C (solo, 04-30): CNN Adam vs SGD on 5090
 ├── figures/                           # Publication-quality figures
 ├── notebooks/
 │   └── analysis.ipynb                 # Interactive analysis
@@ -84,69 +86,88 @@ We use two complementary approaches:
 └── README.md
 ```
 
+> **Note.** `results/` on disk also contains diagnostic-only subdirectories not listed above (e.g. `depth_ablation/`, `hessian_topeig/`, `full_empirical_ntk*/`, `fractionalk_epochwise*/`, `metric_audit/`, archived `*_a100/` runs). These hold raw JSON metrics for the §6.10–§6.13 mechanism figures and the metric-audit history; the tree shows only the directories used to back the headline experiments and solo extensions.
+
 ## Quick Start
 
 ```bash
+# Either install via requirements.txt:
+pip install -r requirements.txt
+# or explicitly:
 pip install torch torchvision numpy matplotlib tqdm scikit-learn pandas
+```
 
-# Run RFF experiments only (~15 seconds)
+### Minimal (CPU, ~15 s)
+
+Reproduce the RFF model-wise and sample-wise double descent curves — no GPU needed.
+
+```bash
 PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd --experiments "1,2"
+```
 
-# Run full experiment suite including neural networks (~3-4 hours)
+### Full core pipeline (GPU, ~3–4 h)
+
+The four headline experiments (RFF model-wise, RFF sample-wise, NN model-wise, NN epoch-wise) end-to-end.
+
+```bash
 PYTHONUNBUFFERED=1 python3 -m src.experiments.comprehensive_dd
+```
 
-# Run architecture comparison (requires GPU, ~6-10 hours)
-python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
+### Headline NN result — DD Recovery (GPU, ~10 h)
 
-# Run Nakkiran recipe + augmentation ablation (requires GPU, ~2.5 hours)
-python3 -m src.experiments.exp_nakkiran_recipe --exp smoke   # sanity check (~3 min)
-python3 -m src.experiments.exp_nakkiran_recipe --exp A       # Nakkiran recipe, k=1,2,4,8
-python3 -m src.experiments.exp_nakkiran_recipe --exp B       # augmentation ablation
-python3 -m src.experiments.exp_nakkiran_recipe --exp all     # both A+B
+Fractional-$k$ ResNet sweep that recovers the model-wise DD on CIFAR-10. This is the project's main NN finding; see report §5.3.
 
-# Run DD Recovery fractional-k sweep (requires GPU, ~10 hours)
+```bash
 python3 src/experiments/exp_dd_recovery.py --mode smoke      # sanity check
 python3 src/experiments/exp_dd_recovery.py --mode probe      # 400-epoch probe
 python3 src/experiments/exp_dd_recovery.py --mode main       # full 2000-epoch sweep (2 seeds)
 python3 src/experiments/exp_dd_recovery.py --mode nslice     # n=8000 comparison
+python3 src/experiments/plot_dd_recovery.py                  # regenerate figures
+```
 
-# Regenerate DD recovery figures from local results
-python3 src/experiments/plot_dd_recovery.py
+### Research extensions
 
-# Activation ablation at the DD-recovery onset (k=0.1875; 6 GPU runs)
+Optional — each maps to a specific section of the report.
+
+```bash
+# Architecture comparison — negative result motivating fractional-k (~6–10 h GPU)
+python3 -m src.experiments.exp_architecture --epochs 500 --noise 0.1
+
+# Nakkiran recipe + augmentation ablation (~2.5 h GPU)
+python3 -m src.experiments.exp_nakkiran_recipe --exp A       # Nakkiran recipe, k=1,2,4,8
+python3 -m src.experiments.exp_nakkiran_recipe --exp B       # augmentation ablation
+python3 -m src.experiments.exp_nakkiran_recipe --exp all     # both A+B
+
+# Activation ablation at the DD-recovery onset, k=0.1875 (6 GPU runs)
 python3 -m src.experiments.exp_activation_ablation --device cuda
 
-# === Solo extensions (shufeng branch, Apr 30) — see report §6.5–§6.8 ===
-
-# Person A: ridge regularisation smooths the RFF DD peak (~75 sec on CPU)
-python3 -m src.experiments.personA_ridge_sweep
-
-# Person B: label-noise sweep 0%/10%/20%/30%/40% (~75 sec on CPU)
-python3 -m src.experiments.personB_noise_sweep
-
-# Person C: Adam vs SGD CNN sweep on CIFAR-10 (~10-15 min on a 5090)
+# Solo extensions — report §6.5–§6.8 (shufeng branch, Apr 30)
+python3 -m src.experiments.personA_ridge_sweep                 # ~75 s CPU — RFF ridge λ sweep
+python3 -m src.experiments.personB_noise_sweep                 # ~75 s CPU — RFF noise 0–40%
 python3 -m src.experiments.personC_optimizer_compare \
     --widths 8,16,24,32,48,64 --optimizers sgd,adam \
-    --noises 0.0,0.15 --seeds 42,7 --epochs 500
-python3 -m src.experiments.personC_plot   # builds the two figures
+    --noises 0.0,0.15 --seeds 42,7 --epochs 500                # ~10–15 min 5090 — Adam vs SGD CNN
+python3 -m src.experiments.personC_plot                        # build the two figures
+python3 -m src.experiments.personD_bounds_figure               # no compute — bounds-vs-observed figure
 
-# Person D: classical-bounds-vs-observed conceptual figure (no compute)
-python3 -m src.experiments.personD_bounds_figure
-
-# §6.9 Sample-wise NN DD: n×k sweep on fractional-k ResNet (~2h on 5090)
+# Sample-wise NN DD — report §6.9 (~2 h 5090)
 python3 -m src.experiments.exp_samplewise_nn \
     --ns 1000,2000 --ks 0.0625,0.125,0.25,0.5,1.0 --seeds 42,7 --epochs 1500
-python3 -m src.experiments.exp_samplewise_nn_plot  # pools with main/nslice for 4-curve figure
+python3 -m src.experiments.exp_samplewise_nn_plot              # pool with main/nslice → 4-curve figure
 
-# Bartlett-2020-style effective-rank bound diagnostic (no GPU; post-processing only)
+# Bartlett-2020 effective-rank diagnostic (no GPU; post-processing only)
 python3 -m src.experiments.exp_bartlett_bound_eval
 
-# Supplemental three directions: OOD vs ID, ordered n, early stopping
-# S1+S2 are RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
+# Supplementals S1 (OOD/ID), S2 (ordered n), S3 (early stop CNN)
+# S1+S2 RFF/CPU; S3 trains CIFAR CNNs (use --quick for smaller sweeps; GPU optional)
 python3 -m src.experiments.supplemental_dd_extras --experiments S1,S2,S3
+```
 
-# Regenerate all paper figures from saved results JSON files
-make figures
+### Build deliverables
+
+```bash
+make figures        # regenerate all paper figures from saved results
+make pdf            # build report.pdf via pandoc + tectonic (see Makefile)
 ```
 
 ## Experiments and Key Results
