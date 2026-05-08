@@ -21,13 +21,13 @@ paper-figures: figures
 # numbering so the manual "Figure N:" labels in markdown are not double-prefixed.
 pdf: report.pdf
 
-report.pdf: report.md pandoc-header.tex
+report.pdf: report.md paper/pandoc-header.tex
 	$(PANDOC) report.md -o report.pdf \
 	    --pdf-engine=$(PDF_ENGINE) \
 	    --toc --toc-depth=2 \
 	    -V geometry:margin=1in \
 	    -V monofont="Menlo" \
-	    --include-in-header=pandoc-header.tex
+	    --include-in-header=paper/pandoc-header.tex
 
 clean-pdf:
 	rm -f report.pdf
