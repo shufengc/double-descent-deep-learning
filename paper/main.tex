@@ -1,0 +1,61 @@
+\documentclass[sigconf,nonacm,11pt,review=false]{acmart}
+
+% --- ACM template housekeeping (we are not submitting to an ACM venue) ---
+\settopmatter{printacmref=false}
+\setcopyright{none}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+\acmConference[EECS 6699]{Mathematics of Deep Learning, Spring 2026}{Final Project Report}{Columbia University}
+
+% --- packages required by report.tex content ---
+\usepackage{amsmath,amsthm}     % NOTE: do NOT load amssymb here; acmart provides its own
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[capitalise,noabbrev]{cleveref}
+% NOTE: do NOT load natbib here; acmart loads natbib with sort&compress, numbers options
+
+\graphicspath{{figures/}{../figures/}{../results/}}
+
+% --- Pandoc helpers / pseudo-commands ---
+\providecommand{\pandocbounded}[1]{#1}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\real}{\mathbb{R}}
+
+% --- Title block ---
+\title{Architecture- and Metric-Corrected Double Descent}
+\subtitle{A Fractional-Width ResNet Recovers the Belkin--Nakkiran Curve}
+
+\author{Zhengda Li}
+\affiliation{\institution{Columbia University, EECS 6699 Spring 2026}\country{}}
+\email{zl3651@columbia.edu}
+
+\author{Yusheng Li}
+\affiliation{\institution{Columbia University, EECS 6699 Spring 2026}\country{}}
+\email{yl6009@columbia.edu}
+
+\author{Shufeng Chen}
+\affiliation{\institution{Columbia University, EECS 6699 Spring 2026}\country{}}
+\email{sc5739@columbia.edu}
+
+\author{Yizheng Lin}
+\affiliation{\institution{Columbia University, EECS 6699 Spring 2026}\country{}}
+\email{yl6079@columbia.edu}
+
+\begin{document}
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+\maketitle
+
+\input{report}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

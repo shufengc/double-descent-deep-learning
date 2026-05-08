@@ -14,6 +14,7 @@ paper/*.synctex.gz
 paper/*.toc
 paper/*.fls
 paper/*.fdb_latexmk
+paper/main-blx.bib
 
 # Datasets (too large, download via code)
 data/

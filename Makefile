@@ -32,12 +32,13 @@ report.pdf: report.md pandoc-header.tex
 clean-pdf:
 	rm -f report.pdf
 
-# Build the NeurIPS-format submission paper from paper/paper.tex.
+# Build the ACM-sigconf submission paper from paper/main.tex.
+# Multi-file structure: main.tex (driver) + abstract.tex + report.tex + references.bib.
 # Uses tectonic, which auto-fetches LaTeX packages and runs BibTeX.
-paper: paper/paper.pdf
+paper: paper/main.pdf
 
-paper/paper.pdf: paper/paper.tex paper/paper.bib paper/neurips_2024.sty
-	cd paper && tectonic --keep-intermediates --reruns 3 paper.tex
+paper/main.pdf: paper/main.tex paper/abstract.tex paper/report.tex paper/references.bib
+	cd paper && tectonic --keep-intermediates --reruns 3 main.tex
 
 clean-paper:
-	cd paper && rm -f paper.pdf paper.aux paper.bbl paper.blg paper.log paper.out
+	cd paper && rm -f main.pdf main.aux main.bbl main.blg main.log main.out main.synctex.gz
