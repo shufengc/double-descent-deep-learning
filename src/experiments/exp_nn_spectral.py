@@ -1,20 +1,7 @@
 """
 NN spectral mechanism on fractional-k ResNet (R3 / report §6.10).
 
-For each k in the DD-Recovery sweep, train to convergence and extract the
-spectral signature of the penultimate-layer feature matrix Z ∈ R^{N×c3}:
-
-  - effective (stable) rank   = ||Z||_F^2 / ||Z||_op^2
-  - top-K singular values     (full spectrum saved)
-  - condition number          = σ_max / σ_min
-  - participation ratio       = (Σσ_i^2)^2 / (Σσ_i^4)        (Renyi-2 entropy)
-
-The penultimate-feature kernel ZZ^T is the **last-layer empirical NTK** (the
-Jacobian of the linear classifier weights). For a 3-stage ResNet whose feature
-dim c3=max(1,round(64k)), this is the cleanest NN-side analogue of the RFF
-condition-number diagnostic from §6.8.
-
-Usage on dd-5090:
+Usage:
   python -m src.experiments.exp_nn_spectral --device cuda --epochs 500
   python -m src.experiments.exp_nn_spectral --smoke --device cuda
 

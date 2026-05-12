@@ -1,11 +1,6 @@
 """
 Depth-axis ablation on the fractional-k ResNet (W5 / report §6.12).
 
-Closes Lecture 12 Theme 1 ("approximation theory and the impact of depth")
-within the fractional-k family. Holds k=0.5 fixed (over-parameterised, where
-DD-Recovery is most stable), n=4000, 15% noise, 1500 epochs, varies the number
-of ResNet stages ∈ {2, 4} (depth=3 already covered by §5.3 main sweep).
-
 Usage on dd-5090:
   python -m src.experiments.exp_depth_ablation --device cuda
 

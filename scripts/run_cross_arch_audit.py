@@ -8,6 +8,7 @@ Trainer.train() which evaluates every epoch. Each run ~15-20 min instead of 53.
 
 Total: 7 MLP × 2 + 6 CNN × 2 = 26 runs × ~17 min ≈ 7-8 GPU-hours on A100.
 """
+
 from __future__ import annotations
 
 import sys

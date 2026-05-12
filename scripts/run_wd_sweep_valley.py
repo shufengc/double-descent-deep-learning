@@ -5,13 +5,9 @@ Hypothesis: weight decay smooths the NN valley analogously to how ridge
 smooths the RFF peak (paper §3.2, ridge sweep). Direct theoretical bridge
 between the paper's RFF and NN halves.
 
-Citable prior art: Yilmaz & Heckel (2022), "Regularization-wise double descent"
-(arXiv:2206.01378) — analytic linear models. We extend to trained NN.
-
 Hyperparameters: k=0.5, n=4000, 15% noise, 2000 epochs, Adam lr=1e-4.
 Five λ_wd values: {0, 1e-5, 1e-4, 1e-3, 1e-2}, 2 seeds each = 10 runs.
-Estimated wallclock: ~10 GPU-hours on A100 (k=0.5 is medium-size; ~17 min/run
-based on Yusheng-replicate benchmarks).
+Estimated wallclock: ~10 GPU-hours on A100.
 """
 from __future__ import annotations
 

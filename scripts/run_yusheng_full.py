@@ -1,8 +1,5 @@
 """Full reproduction of Yusheng's 11-run densification + nslice campaign.
 
-Mirror of Yusheng's scripts/run_cloud_patch.py; outputs to our own runs/ dir
-to keep his results untouched for later comparison.
-
 Hyperparameters: noise=0.15, augment=True, batch_size=256, lr=1e-4,
                  eval_every=100, matching Yusheng's settings exactly.
 """

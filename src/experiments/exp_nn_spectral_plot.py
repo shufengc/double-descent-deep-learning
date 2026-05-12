@@ -1,11 +1,6 @@
 """
 Plot NN spectral diagnostics versus k for fractional-k ResNet at n=4000.
 
-Three panels (figure: nn_effective_rank_vs_k.png):
-  (a) normalized stable rank  eff_rank / c_3       — fraction of feature dim spanned
-  (b) condition number        sigma_max / sigma_min — log-scale
-  (c) normalized participation ratio  PR / c_3      — Renyi-2 effective dimension
-
 Reads results/nn_spectral/summary.json (penultimate-feature spectrum from the
 spectral sweep). The penultimate-feature dimension c_3 = max(1, round(64k))
 varies with k; normalising by c_3 puts diagnostics on a comparable scale and

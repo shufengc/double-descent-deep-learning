@@ -1,10 +1,6 @@
 """
 Double-descent recovery experiment for May 4 presentation.
 
-Self-contained: defines its own fractional-k ResNet, its own data pipeline
-(which returns corrupted indices for memorization-fraction diagnostic), and
-its own training loop.
-
 Modes:
   smoke  -- single run, k=1, n=1000, 100 epochs
   probe  -- k-sweep at n=4000, 400 epochs, 1 seed -- maps the transition

@@ -1,7 +1,4 @@
 """
-Shufeng Chen (sc5739) -- EECS 6699 Final Project
-exp_nakkiran_recipe.py
-
 Two experiments designed to close the NN double-descent gap:
 
   Experiment A — Nakkiran Recipe (model-wise DD on ResNet)

@@ -1,26 +1,12 @@
 """
 Quick full empirical-NTK verification experiment for fractional-k ResNet.
 
-Purpose
--------
-This is a lightweight, one-click follow-up to Shufeng's §6.10 NN spectral
-mechanism. Shufeng's existing experiment uses penultimate-layer feature spectra.
-This script computes a deeper diagnostic: the empirical NTK Gram matrix from
-Jacobians over ALL trainable parameters.
-
-It is intentionally small enough to run on a laptop/single GPU:
-  - trains a small set of fractional-k ResNets from scratch;
-  - computes full empirical NTK on a small test subset;
-  - writes summary + per-k JSON + one figure.
-
-This is a validation/supplement, not a replacement for the 5090 headline runs.
-
 Typical usage
 -------------
 Smoke test:
     python -m src.experiments.exp_full_empirical_ntk_quick --smoke --device cuda
 
-Recommended quick run:
+Quick run:
     python -m src.experiments.exp_full_empirical_ntk_quick \
       --ks 0.125,0.1875,0.25,0.5 \
       --n-train 1000 --epochs 200 --n-ntk-samples 12 \

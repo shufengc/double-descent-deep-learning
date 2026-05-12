@@ -1,15 +1,6 @@
 """
 Literal ResNet18 controlled comparison (W2 / report §5.3.1).
 
-Runs torchvision-style ResNet18 (4-stage BasicBlock-based) at three width
-multipliers ∈ {0.5, 1.0, 2.0}, on the SAME hyperparameters as the fractional-k
-DD-Recovery sweep: n=4000, 15% label noise, Adam lr=1e-4, 2000 epochs, 1 seed.
-
-The point: confirm head-to-head that literal ResNet18 does not exhibit the
-same DD trajectory as the fractional-k family. Closes a credibility gap in
-§5.3 where the "ResNet18 fails" claim was based on an earlier flat-curve
-diagnostic, not a controlled comparison.
-
 Usage:
   python -m src.experiments.exp_resnet18_compare --device cuda
 """

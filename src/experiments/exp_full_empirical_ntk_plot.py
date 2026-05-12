@@ -3,10 +3,7 @@ Plot tight full empirical-NTK diagnostics versus k for fractional-k ResNet
 (N5 / report §6.10).
 
 Reads results/full_empirical_ntk/summary.json (the tight 9 k × 800 ep × 32
-NTK sample sweep). Produces a 3-panel figure:
-  (a) condition number vs k (log-log)
-  (b) stable rank vs k (log-x)
-  (c) participation ratio vs k (log-x)
+NTK sample sweep).
 
 Marks the DD-recovery onset at k=0.1875.
 """

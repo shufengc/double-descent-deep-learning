@@ -1,18 +1,6 @@
 """
 Extension D — Why classical generalization bounds fail.
 
-Generates one conceptual figure overlaying:
-  (left axis)  a stylised classical bound such as O(sqrt(p / n))
-               (representative of VC / Rademacher bounds, monotone increasing
-               in parameter count)
-  (right axis) the OBSERVED test MSE from Exp 1 (RFF model-wise on MNIST,
-               10% noise, n=1000), which exhibits the textbook double descent
-               shape: rises, peaks at p/n=1, then second-descends.
-
-The point: classical bounds predict a monotone increase as p/n grows, while
-the observed curve falls below them in the overparameterised regime. Modern
-norm-based / minimum-norm / benign-overfitting analyses are the right lens.
-
 Loads results/exp1_model_wise_rff/results.json. No new training required.
 Writes figures/personD_bound_vs_observed.png.
 """

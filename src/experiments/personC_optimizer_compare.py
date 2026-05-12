@@ -1,24 +1,6 @@
 """
 Extension C — Adam vs SGD on CNN (model-wise + epoch-wise).
 
-Runs a CNN width sweep on CIFAR-10 with both optimizers and both noise levels.
-Uses GPU-resident training (no DataLoader, all tensors live on the GPU)
-following the shufeng_experiments._train_fast pattern, which removes the
-host-side bottleneck observed when using DataLoader+make_loaders for tiny
-n=4000 datasets.
-
-Default configuration (full run on a 5090):
-    widths      = [8, 16, 32, 64]            num_filters
-    optimizers  = ["sgd", "adam"]
-    noises      = [0.0, 0.15]                 clean + Nakkiran-noise
-    seeds       = [42]
-    epochs      = 250
-    n_train     = 4000
-    => 4 * 2 * 2 * 1 = 16 runs
-
-Both optimizers run with constant learning rate (no scheduler) so the
-comparison isolates the optimizer step rule. Eval every `eval_interval` epochs.
-
 Saves per-run history to:
   <output-dir>/<run_id>/history.json
 And a summary table to <output-dir>/summary.json.

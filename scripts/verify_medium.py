@@ -1,6 +1,6 @@
 """Medium verification: 3 runs to reproduce Yusheng key data points.
 k=0.0625/s42 (under-param sanity), k=0.5/s42 (valley bottom), k=2.0/s42 (recovery plateau).
-n=4000, 2000 epochs, hyperparams matched to Yusheng run_cloud_patch.py.
+n=4000, 2000 epochs.
 """
 import sys
 import os

@@ -4,6 +4,7 @@ Exp 7 (C = epoch-wise SGD ResNet), Exp 8 (A = EMC).
 Runs the four in sequence. Exp 5 + 6 are RFF-only and fast.
 Exp 7 (SGD ResNet) and Exp 8 (EMC) are the slow ones.
 """
+
 import sys
 import os
 import subprocess

@@ -1,11 +1,6 @@
 """
 k*(n) EMC-scaling fit (N6 / report §6.9 addendum).
 
-Origin: Nakkiran, Kaplun, Bansal, Yang, Barak, Sutskever (2021), "Deep Double
-Descent" §3 — EMC definition. Belkin/Hastie kernel-DD theory predicts
-p* ∝ √n in the proportional limit; for our fractional-k ResNet that translates
-to k* ∝ √n (since params ~ k²).
-
 Reads three summary files (n=1k+2k from samplewise_nn, n=4k from main, n=8k
 from nslice). Computes k*(n) = arg-max of best_test_acc(k) at each n. Fits
 log k* = α log n + β. Reports slope α (theory: 0.5).

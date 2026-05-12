@@ -1,7 +1,5 @@
 """
-Shufeng Chen (sc5739) -- EECS 6699 Final Project
-New experiments on the `shufeng` branch:
-
+Shufeng Chen (sc5739) -- EECS 6699 Final Project:
   exp_noise_multiseed : Validate Zhengda's exp6 -- noise 0/10/20/40% with 5 seeds
   expB_bias_variance  : Bias-variance decomposition of RFF test MSE (D'Ascoli et al. 2020)
   expC_epoch_sgd      : Epoch-wise DD with SGD + ResNet (Nakkiran et al. 2021 setup)

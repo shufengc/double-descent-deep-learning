@@ -1,10 +1,4 @@
 """
-audit_metrics.py — Day-1 best-vs-final test-accuracy audit.
-
-Triggered 2026-05-05 after Codex audit found that exp_architecture.py
-and exp_samplewise_nn_plot.py default to `best_test_acc = max(history["test_acc"])`,
-an implicit test-set selection that can mask DD valleys.
-
 This script re-aggregates ALL existing summary.json files in results/,
 extracting both `best_test_acc` and `final_test_acc` side-by-side. It does
 not retrain anything and does not modify any input file.

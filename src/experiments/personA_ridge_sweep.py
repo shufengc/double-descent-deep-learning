@@ -1,17 +1,9 @@
 """
 Extension A — Ridge regularization smooths the RFF double descent peak.
 
-Sweeps lambda over five orders of magnitude at a single noise level (10%) on
-MNIST, n=1000, holding all other knobs fixed. The headline figure overlays
-five test-MSE-vs-(p/n) curves, showing that increasing lambda monotonically
-suppresses the p/n=1 peak and pulls the overparameterised regime closer to the
-ridgeless optimum.
-
-This isolates the lambda axis of Zhengda's noise x lambda grid (Exp 8) into
-a textbook ridge-path figure suitable for the Mathematical Background section.
-
 Reuses random_fourier_features, min_norm_solution, load_mnist_numpy from
-comprehensive_dd.py. Output: results/personA_ridge_sweep/results.json plus
+comprehensive_dd.py. 
+Output: results/personA_ridge_sweep/results.json plus
 figures/personA_ridge_smooths_peak.png.
 """
 

@@ -7,27 +7,6 @@ This script evaluates Bartlett-style effective-dimension quantities on the
 trained fractional-k ResNet spectral summaries and compares them with observed
 test risk.
 
-Important framing
------------------
-Bartlett, Long, Lugosi & Tsigler (2020) Theorem 1 is a theorem for
-minimum-norm linear regression under assumptions on the population covariance.
-Our trained ResNet is not literally that model. Therefore this script does NOT
-claim to compute a rigorous theorem-certified upper bound for the neural
-network. Instead, it computes the empirical analogues that appear in the
-theorem:
-
-    r(Σ)  = tr(Σ) / ||Σ||_op
-    R(Σ)  ≈ (tr(Σ))^2 / tr(Σ^2)
-
-using the penultimate-feature covariance spectrum from results/nn_spectral,
-then asks whether the resulting Bartlett-style complexity proxies track the
-observed test risk of the trained DD-Recovery ResNets.
-
-This is intended as a lightweight, no-GPU theory diagnostic:
-    - Does effective rank explain the DD-Recovery shape?
-    - Is the bound/proxy informative, or still too loose/vacuous?
-    - Does it support the claim that raw parameter count is the wrong axis?
-
 Inputs
 ------
 Default inputs are expected to already exist in the repository:

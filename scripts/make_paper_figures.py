@@ -1,6 +1,6 @@
 """Generate paper-final figures from the A100 reproduction.
 
-Color scheme (per team agreement 2026-05-05):
+Color scheme:
   final = green   (the corrected metric)
   peek  = red     (legacy best_test_acc; "peek at test set")
   RFF   = blue

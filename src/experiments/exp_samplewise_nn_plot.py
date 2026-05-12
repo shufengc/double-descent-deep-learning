@@ -2,7 +2,7 @@
 Plot sample-wise NN double descent: test accuracy vs k (width multiplier)
 for n ∈ {1000, 2000, 4000, 8000}, showing the peak shifts right as n grows.
 
-Data sources (pooled automatically if the paths exist):
+Data sources:
   results/samplewise_nn/summary.json          -- n=1000, 2000
   results/dd_recovery_5090_focused/main/summary.json   -- n=4000, 2 seeds
   results/dd_recovery_5090_focused/nslice/summary.json -- n=8000, 1 seed

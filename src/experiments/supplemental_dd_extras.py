@@ -1,5 +1,5 @@
 """
-Supplemental double-descent experiments (three directions from project plan).
+Supplemental double-descent experiments.
 
   S1_ood     : ID vs OOD test (pixel Gaussian noise) on RFF+MNIST, model-wise p/n
   S2_order   : Sample-wise DD with random vs easy-to-hard vs hard-to-easy ordering

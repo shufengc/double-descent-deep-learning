@@ -1,14 +1,6 @@
 """
 Zhengda Exp8: Noise x Ridge Mechanism Study
 
-This is a standalone follow-up experiment for Zhengda's Exp5 and the fixed Exp6.
-Put this file under:
-    src/experiments/zhengda_exp8_noise_lambda_mechanism.py
-
-Run from the project root with:
-    python -m src.experiments.zhengda_exp8_noise_lambda_mechanism
-
-What this experiment studies:
 1. Exp5 deep dive:
    Ridge regularization suppresses the double descent peak.
    Here we measure *why* by tracking solution norm, regularized condition number,
@@ -42,13 +34,6 @@ import matplotlib.pyplot as plt
 # Make imports work when running as `python -m src.experiments...` from repo root.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-# Reuse Zhengda's original Exp5/RFF utilities from comprehensive_dd.py.
-# comprehensive_dd.py contains:
-#   random_fourier_features(...)
-#   load_mnist_numpy(...)
-#   min_norm_solution(...)
-# We use random_fourier_features and load_mnist_numpy for consistency, but use an
-# SVD-based solver below so lambda=0 is a stable true minimum-norm interpolator.
 try:
     from src.experiments.comprehensive_dd import random_fourier_features, load_mnist_numpy
 except Exception:

@@ -1,18 +1,6 @@
 """
 Hessian top-eigenvalue (sharpness) at the DD-recovery onset (N2 / report §6.13).
 
-Origin: Yao, Gholami, Keutzer, Mahoney (2020). "PyHessian: Neural networks
-through the lens of the Hessian." IEEE Big Data. Plus Foret, Kleiner, Mobahi,
-Neyshabur (2021), "Sharpness-Aware Minimization." ICLR.
-
-Computes top eigenvalue of the loss Hessian via power iteration on
-Hessian-vector products (using torch.autograd.grad twice). At end of training,
-on a random subset of training data, k ∈ {0.0625, 0.125, 0.1875, 0.5, 2.0}.
-
-If sharpness peaks at k=0.1875 alongside our other 4 spectral diagnostics, we
-have a 5th independent witness for the spectral phase transition AND we
-directly engage Group 2's loss-landscape territory.
-
 Usage:
   python -m src.experiments.exp_hessian_topeig --device cuda
 """

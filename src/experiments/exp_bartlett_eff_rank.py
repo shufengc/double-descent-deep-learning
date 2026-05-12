@@ -3,16 +3,6 @@ Bartlett benign-overfitting effective rank rk(Σ) = tr(Σ) / ||Σ||_op
 on penultimate-feature covariance of the trained fractional-k ResNet
 (N1 / report §6.10).
 
-Origin: Bartlett, Long, Lugosi, Tsigler (2020). "Benign overfitting in linear
-regression." PNAS 117(48):30063-30070. Theorem 1 — rk(Σ) and R_k(Σ) are the
-two effective-dimension quantities that control the generalisation bound for
-minimum-norm interpolation. We compute the empirical analogue rk(Σ̂) on the
-penultimate-feature covariance of the trained NN.
-
-This is *exactly* the quantity Bartlett et al. use in their bound, computed
-for the first time on a trained DD-recovery ResNet's last-layer features.
-4th independent witness for the spectral phase transition at k=0.1875.
-
 Reads:
   results/nn_spectral/k*/spectrum.json   (full singular values already saved)
 

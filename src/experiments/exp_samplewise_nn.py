@@ -1,21 +1,11 @@
 """
 Sample-wise NN double descent on fractional-k ResNet.
 
-This is a thin driver on top of `exp_dd_recovery.train_one_run`. It sweeps
-(n, k) at fixed noise=0.15, plotting test accuracy versus k for several n
-to verify the peak shifts right as n grows (the NN-side analogue of
-Nakkiran's sample-wise DD on RFF).
-
-Reuses existing main/ (n=4000) and nslice/ (n=8000) results from
-results/dd_recovery_5090_focused/ — they are *not* re-run. This script only
-runs the missing n values: 1000 and 2000 by default.
-
 Output dir: results/samplewise_nn/
   k{K}_n{N}_ep{EP}_s{S}/results.json    (one per run)
   summary.json                           (slim aggregate)
 
-Usage on 5090:
-  cd ~/double-descent
+Usage:
   python -m src.experiments.exp_samplewise_nn --epochs 1500 --device cuda
 
 Smoke test (single fast run):

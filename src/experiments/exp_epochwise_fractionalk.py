@@ -1,12 +1,6 @@
 """
 Epoch-wise early-stopping diagnostics on fractional-k ResNet.
 
-Fixed protocol (Yizheng plan):
-  k      = {0.125, 0.1875, 0.5}
-  seeds  = {42, 7}
-  epochs = 2000
-  eval   = every 25 epochs
-
 Outputs:
   results/fractionalk_epochwise/
     k{K}_n4000_ep2000_s{S}/results.json

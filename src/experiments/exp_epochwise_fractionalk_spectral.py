@@ -1,13 +1,6 @@
 """
 Train-time penultimate-feature spectrum (§6.10-style) on the fractional-k epochwise protocol.
 
-Same training setup as exp_epochwise_fractionalk (Yizheng plan: k, seeds, n=4000, noise,
-train/val split, eval every 25 epochs), plus every --spectral-every epochs:
-  - collect Z on CIFAR-10 test (first N samples, default 2048, matching report §6.10)
-  - centred SVD stable rank, PR, condition number (exp_nn_spectral.spectrum_diagnostics)
-
-Does not modify exp_epochwise_fractionalk.py.
-
 Outputs:
   results/fractionalk_epochwise_spectral/
     k{K}_n4000_ep2000_s{S}/results.json   (history + spectral_trace)

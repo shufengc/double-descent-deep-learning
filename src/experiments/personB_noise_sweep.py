@@ -1,16 +1,6 @@
 """
 Extension B — Label noise as a stress test for interpolation.
 
-Extends the existing 0/10/20% RFF noise sweep to include 30% and 40%.
-The figure overlays five test-MSE curves (one per noise rate) to make the
-peak amplification visible. The accompanying summary table reports, for each
-noise rate:
-
-  - peak MSE (the maximum test_mse across the sweep)
-  - peak location (p/n at the maximum)
-  - peak-to-valley ratio (peak / min over p/n >= 1.5, i.e. recovery regime)
-  - recovery test accuracy at p/n = 8
-
 Reuses the same RFF pipeline as Extension A. Output:
 results/personB_noise_sweep/{results.json, summary.json},
 figures/personB_noise_amplification.png.
