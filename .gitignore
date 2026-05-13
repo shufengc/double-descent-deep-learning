@@ -5,9 +5,6 @@ _internal/
 paper.pdf
 Presentation.pdf
 
-# Claude Code worktrees / agent state (never push)
-.claude/
-
 # LaTeX compile artifacts if report sources are built locally
 paper/*.aux
 paper/*.bbl
