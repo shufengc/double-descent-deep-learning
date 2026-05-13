@@ -4,7 +4,7 @@
 
 **Team:** Zhengda Li (zl3651), Yusheng Li (yl6009), Shufeng Chen (sc5739), Yizheng Lin (yl6079)
 
-This repository contains the code, saved experiment results, and generated figures for an empirical study of double descent in random-feature models and neural networks. The final report PDF and presentation slides are submitted separately and are intentionally not tracked here.
+This repository contains the code, saved experiment results, and generated figures for an empirical study of double descent in random-feature models and neural networks.
 
 ## Overview
 
@@ -75,8 +75,6 @@ Regenerate figures from saved results:
 ```bash
 make figures
 ```
-
-The report PDF and presentation slides are submitted separately, so this repository does not include PDF artifacts or PDF build targets.
 
 ## Main Experiment Entry Points
 
@@ -155,7 +153,6 @@ Core and diagnostic figures are tracked under `figures/` and selected `results/`
 - Dataset downloads are handled by torchvision and are ignored via `data/`.
 - Heavy per-run outputs are ignored where summary files carry the aggregate metrics.
 - GPU-heavy experiments may take hours; the repository includes saved results so figures can be regenerated without rerunning all training.
-- The submitted report and slides are external deliverables and should be uploaded separately from this code repository.
 
 ## References
 
